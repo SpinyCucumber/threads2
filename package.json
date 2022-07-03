@@ -1,0 +1,24 @@
+{
+  "name": "threads",
+  "version": "1.0.0",
+  "description": "This is a WIP procedural art project written using Javascript and HTML 5 canvas.",
+  "private": true,
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/SpinyCucumber/threads.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/SpinyCucumber/threads/issues"
+  },
+  "homepage": "https://github.com/SpinyCucumber/threads#readme",
+  "devDependencies": {
+    "webpack": "^5.73.0",
+    "webpack-cli": "^4.10.0"
+  }
+}
