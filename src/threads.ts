@@ -1,4 +1,4 @@
-import { v4 as uuid } from 'uuid';
+import { v4 as uuid } from "uuid";
 
 export interface Thread {
     row: number;
@@ -13,15 +13,15 @@ export class Threads {
 
     threads: Thread[] = [];
     steps: number = 0;
-    options: ThreadsOptions;
+    size: number;
 
     constructor(options: ThreadsOptions) {
-        this.options = options;
+        Object.assign(this, options);
     }
 
     populate() {
         this.threads.push({
-            row: Math.floor(this.options.size/2),
+            row: Math.floor(this.size/2),
             id: uuid(),
         });
     }
