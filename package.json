@@ -4,8 +4,8 @@
   "description": "This is a WIP procedural art project written using Javascript and HTML 5 canvas.",
   "private": true,
   "scripts": {
-    "build": "webpack",
-    "serve": "webpack serve"
+    "build": "webpack --mode=production",
+    "serve": "webpack serve --mode=development"
   },
   "repository": {
     "type": "git",
