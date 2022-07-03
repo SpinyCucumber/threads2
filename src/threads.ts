@@ -12,6 +12,7 @@ export interface ThreadsOptions {
 export class Threads {
 
     threads: Thread[] = [];
+    steps: number = 0;
     options: ThreadsOptions;
 
     constructor(options: ThreadsOptions) {
@@ -28,8 +29,9 @@ export class Threads {
     step() {
         // TODO
         for (const thread of this.threads) {
-            thread.row += 1;
+            thread.row += (2*this.steps - 1);
         }
+        this.steps += 1;
     }
 
 }
