@@ -1,7 +1,7 @@
 # Threads! #
 This is a WIP procedural art project written using Javascript and HTML 5 canvas.
 
-### Developing ###
+### Development ###
 The VSCode extension [Live Server](https://marketplace.visualstudio.com/items?itemName=ritwickdey.LiveServer) is recommended for running the project locally.
 
 ### Deployment ###
