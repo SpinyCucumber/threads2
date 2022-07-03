@@ -1,5 +1,5 @@
 # Threads! #
-This is a WIP procedural art project written using Javascript and HTML 5 canvas.
+This is a WIP procedural art project written using Typescript and HTML 5 Canvas.
 Webpack is used to bundle code and facilitate writing clean modules.
 
 ### Development ###
