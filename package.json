@@ -4,7 +4,7 @@
   "description": "This is a WIP procedural art project written using Javascript and HTML 5 canvas.",
   "private": true,
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "build": "webpack"
   },
   "repository": {
     "type": "git",
