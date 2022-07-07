@@ -1,11 +1,12 @@
 import { v4 as uuid } from "uuid";
 
 export interface Thread {
-    row: number;
+    pos: number;
     id: string;
 }
 
 export interface ThreadsOptions {
+    numThreads: number;
     size: number;
 }
 
@@ -13,6 +14,7 @@ export class Threads {
 
     threads: Thread[] = [];
     steps: number = 0;
+    numThreads: number;
     size: number;
 
     constructor(options: ThreadsOptions) {
@@ -20,8 +22,9 @@ export class Threads {
     }
 
     populate() {
+        // Testing
         this.threads.push({
-            row: Math.floor(this.size/2),
+            pos: this.size/2,
             id: uuid(),
         });
     }
@@ -29,7 +32,7 @@ export class Threads {
     step() {
         // TODO
         for (const thread of this.threads) {
-            thread.row += (2*this.steps - 1);
+            /// Update position
         }
         this.steps += 1;
     }
