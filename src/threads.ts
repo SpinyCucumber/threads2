@@ -28,6 +28,7 @@ export class Threads {
     threads: Thread[] = [];
     numThreads: number;
     size: number;
+    elapsedTime = 0;
 
     constructor(options: ThreadsOptions) {
         Object.assign(this, options);
@@ -43,9 +44,10 @@ export class Threads {
      * @param dt Delta time in ms
      */
     update(dt: number) {
-        // TODO
+        this.elapsedTime += dt;
         for (const thread of this.threads) {
             thread.y += (dt * thread.v);
+            // TODO Make it interesting!
         }
     }
 

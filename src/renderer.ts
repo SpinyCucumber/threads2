@@ -4,6 +4,7 @@ export interface ThreadsRendererOptions {
     canvas: HTMLCanvasElement,
     threads: Threads;
     speed?: number;
+    ctxOptions?: { strokeStyle: string, lineWidth: number, lineCap: string };
 }
 
 export class ThreadsRenderer {
@@ -12,6 +13,7 @@ export class ThreadsRenderer {
     canvas: HTMLCanvasElement;
     /** The canvas rendering context */
     ctx: CanvasRenderingContext2D;
+    ctxOptions = { strokeStyle: "white", lineWidth: 5, lineCap: "round" };
     threads: Threads;
     /** The y position of each thread in the last frame */
     lastY = new Map<string, number>();
@@ -22,8 +24,7 @@ export class ThreadsRenderer {
         Object.assign(this, options);
         // Create rendering context
         this.ctx = this.canvas.getContext("2d");
-        this.ctx.lineWidth = 5;
-        this.ctx.lineCap = "round";
+        Object.assign(this.ctx, this.ctxOptions);
     }
 
     public reset() {
