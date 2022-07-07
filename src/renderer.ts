@@ -37,7 +37,7 @@ export class ThreadsRenderer {
         // Render threads
         let x = this.lastX + (dt * this.speed);
         if (this.lastX) {
-            for (const { y, id } of this.threads.threads) {
+            for (const { y, id } of this.threads.threads.values()) {
                 let lastY = this.lastY.get(id);
                 if (lastY) {
                     // Render individual thread

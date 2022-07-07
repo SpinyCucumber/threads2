@@ -11,10 +11,14 @@ export class Thread {
     y: number;
     v: number = 0;
     id: string;
+    threads: Threads;
 
     constructor(options: ThreadOptions) {
         Object.assign(this, options);
-        this.id = uuid();
+    }
+
+    delete(): void {
+        this.threads.deleteQueue.push(this.id);
     }
 
 }
@@ -27,7 +31,8 @@ export interface ThreadsOptions {
 
 export class Threads {
 
-    threads: Thread[] = [];
+    threads = new Map<string, Thread>();
+    deleteQueue: string[] = [];
     numThreads: number;
     height: number;
     /** Duration of a tick in ms */
@@ -35,24 +40,37 @@ export class Threads {
     tickTimer = 0;
     // TESTING
     splitChance = 0.008;
+    deathChance = 0.001;
 
     constructor(options: ThreadsOptions) {
         Object.assign(this, options);
     }
 
+    createThread(options: ThreadOptions) {
+        // Construct thread
+        let thread = new Thread(options);
+        // Generate ID and attach reference
+        thread.id = uuid();
+        thread.threads = this;
+        this.threads.set(thread.id, thread);
+    }
+
     populate(): void {
         // Testing
-        this.threads.push(new Thread({ y: this.height/2 }));
+        this.createThread({ y: this.height/2 });
     }
 
     tick(): void {
-        for (const thread of this.threads) {
+        for (const thread of this.threads.values()) {
             // TESTING
             if (Math.random() < this.splitChance) {
-                this.threads.push(new Thread({
+                this.createThread({
                     y: thread.y,
                     v: thread.v + 0.03 * randInt(-3, 3)
-                }));
+                });
+            }
+            else if (Math.random() < (this.deathChance * this.threads.size)) {
+                thread.delete();
             }
         }
     }
@@ -73,14 +91,18 @@ export class Threads {
             elapsedTicks -= 1;
         }
         if (elapsedTicks > 0) console.log(`Running ${elapsedTicks} ticks behind`);
+        
+        // Delete threads marked for deletion
+        this.deleteQueue.forEach(id => this.threads.delete(id));
+        this.deleteQueue = [];
 
         // Update threads
-        for (const thread of this.threads) {
+        for (const thread of this.threads.values()) {
             thread.y += (dt * thread.v);
             // TODO Make it interesting!
             // TESTING
             // Damping
-            let damping = 1e-4 * dt;
+            let damping = 5e-5 * dt;
             if (Math.abs(thread.v) < damping) thread.v = 0;
             else thread.v -= damping * Math.sign(thread.v);
         }
