@@ -20,14 +20,14 @@ export class Thread {
 
 export interface ThreadsOptions {
     numThreads: number;
-    size: number;
+    height: number;
 }
 
 export class Threads {
 
     threads: Thread[] = [];
     numThreads: number;
-    size: number;
+    height: number;
     elapsedTime = 0;
 
     constructor(options: ThreadsOptions) {
@@ -36,7 +36,7 @@ export class Threads {
 
     populate() {
         // Testing
-        this.threads.push(new Thread({ y: this.size/2 }));
+        this.threads.push(new Thread({ y: this.height/2 }));
     }
 
     /**

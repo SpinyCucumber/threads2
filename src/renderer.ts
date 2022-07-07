@@ -1,7 +1,7 @@
 import { Threads } from "./threads";
 
 export interface ThreadsRendererOptions {
-    canvas: HTMLCanvasElement,
+    ctx: CanvasRenderingContext2D,
     threads: Threads;
     speed?: number;
     ctxOptions?: { strokeStyle: string, lineWidth: number, lineCap: string };
@@ -9,8 +9,6 @@ export interface ThreadsRendererOptions {
 
 export class ThreadsRenderer {
 
-    /** The canvas to render to */
-    canvas: HTMLCanvasElement;
     /** The canvas rendering context */
     ctx: CanvasRenderingContext2D;
     ctxOptions = { strokeStyle: "white", lineWidth: 5, lineCap: "round" };
@@ -22,9 +20,6 @@ export class ThreadsRenderer {
 
     constructor(options: ThreadsRendererOptions) {
         Object.assign(this, options);
-        // Create rendering context
-        this.ctx = this.canvas.getContext("2d");
-        Object.assign(this.ctx, this.ctxOptions);
     }
 
     public reset() {
@@ -36,6 +31,10 @@ export class ThreadsRenderer {
      * @param dt Delta time in ms
      */
     public render(dt: number): void {
+        // Push rendering context
+        this.ctx.save();
+        Object.assign(this.ctx, this.ctxOptions);
+        // Render threads
         let x = this.lastX + (dt * this.speed);
         if (this.lastX) {
             for (const { y, id } of this.threads.threads) {
@@ -53,6 +52,8 @@ export class ThreadsRenderer {
         }
         // Update last x position
         this.lastX = x;
+        // Pop rendering context
+        this.ctx.restore();
     }
 
 }
