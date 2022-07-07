@@ -1,3 +1,13 @@
+/**
+ * Resizes a canvas while preserving canvas content
+ * 
+ * This is accomplished by copying the canvas to an off-screen buffer,
+ * changing width/height, then copying the buffer back.
+ * The old content is rendered at the top left.
+ * @param canvas
+ * @param newWidth
+ * @param newHeight 
+ */
 export function resizeCanvas(canvas: HTMLCanvasElement, newWidth: number, newHeight: number): void {
     // Create temporary canvas to store pixel data
     let buff = document.createElement('canvas');
