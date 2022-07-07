@@ -1,12 +1,13 @@
 import { Threads } from "./threads";
 
 export interface ThreadsRendererOptions {
+    canvas: HTMLCanvasElement,
     threads: Threads;
     speed?: number;
 }
 
 const defaults: Partial<ThreadsRendererOptions> = {
-    speed: 0.01
+    speed: 0.05
 }
 
 export class ThreadsRenderer {
@@ -25,7 +26,8 @@ export class ThreadsRenderer {
         Object.assign(this, {...defaults, ...options});
         // Create rendering context
         this.ctx = this.canvas.getContext("2d");
-        this.ctx.lineWidth = 20;
+        this.ctx.lineWidth = 5;
+        this.ctx.lineCap = "round";
     }
 
     public reset() {
