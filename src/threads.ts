@@ -1,5 +1,5 @@
 import { v4 as uuid } from "uuid";
-import { randn, assignDefined } from "./utility";
+import { randn } from "./utility";
 
 export interface ThreadOptions {
     y: number;
@@ -13,7 +13,7 @@ export class Thread {
     id: string;
 
     constructor(options: ThreadOptions) {
-        assignDefined(this, options);
+        Object.assign(this, options);
         this.id = uuid();
     }
 
@@ -31,15 +31,14 @@ export class Threads {
     numThreads: number;
     height: number;
     /** Duration of a tick in ms */
-    tickDur: 50;
+    tickDur = 50;
     tickTimer = 0;
     // TESTING
     /** Chance for a thread to split each tick */
     splitChance = 0.001;
 
     constructor(options: ThreadsOptions) {
-        assignDefined(this, options);
-        console.log(this.tickDur);
+        Object.assign(this, options);
     }
 
     populate(): void {

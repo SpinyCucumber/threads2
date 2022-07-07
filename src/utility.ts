@@ -1,15 +1,4 @@
 /**
- * Assigns properties of one object to another, ignoring undefined properties
- * @param target Object to copy properties to
- * @param source Object to copy properties from
- */
-export function assignDefined(target: Object, source: Object) {
-    Object.entries(source).map(([key, value]) => {
-        if (value !== undefined) target[key] = value;
-    });
-}
-
-/**
  * Resizes a canvas while preserving canvas content
  * 
  * This is accomplished by copying the canvas to an off-screen buffer,

@@ -1,5 +1,4 @@
 import { Threads } from "./threads";
-import { assignDefined } from "./utility";
 
 export interface ThreadsRendererOptions {
     ctx: CanvasRenderingContext2D,
@@ -20,7 +19,7 @@ export class ThreadsRenderer {
     speed: number = 0.05;
 
     constructor(options: ThreadsRendererOptions) {
-        assignDefined(this, options);
+        Object.assign(this, options);
     }
 
     public reset() {
@@ -34,7 +33,7 @@ export class ThreadsRenderer {
     public render(dt: number): void {
         // Push rendering context
         this.ctx.save();
-        assignDefined(this.ctx, this.ctxOptions);
+        Object.assign(this.ctx, this.ctxOptions);
         // Render threads
         let x = this.lastX + (dt * this.speed);
         if (this.lastX) {
