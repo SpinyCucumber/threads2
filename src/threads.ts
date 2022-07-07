@@ -35,7 +35,7 @@ export class Threads {
     tickTimer = 0;
     // TESTING
     /** Chance for a thread to split each tick */
-    splitChance = 0.001;
+    splitChance = 0.01;
 
     constructor(options: ThreadsOptions) {
         Object.assign(this, options);
@@ -73,7 +73,7 @@ export class Threads {
             this.tick();
             elapsedTicks -= 1;
         }
-        if (elapsedTicks > 0) console.log(`Running ${elapsedTicks} behind`);
+        if (elapsedTicks > 0) console.log(`Running ${elapsedTicks} ticks behind`);
 
         // Update threads
         for (const thread of this.threads) {

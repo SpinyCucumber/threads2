@@ -11,7 +11,7 @@ export class ThreadsRenderer {
 
     /** The canvas rendering context */
     ctx: CanvasRenderingContext2D;
-    ctxOptions = { strokeStyle: "white", lineWidth: 5, lineCap: "round" };
+    ctxOptions = { strokeStyle: "white", lineWidth: 2, lineCap: "round" };
     threads: Threads;
     /** The y position of each thread in the last frame */
     lastY = new Map<string, number>();
