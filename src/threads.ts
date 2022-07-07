@@ -13,7 +13,6 @@ export interface ThreadsOptions {
 export class Threads {
 
     threads: Thread[] = [];
-    steps: number = 0;
     numThreads: number;
     size: number;
 
@@ -29,12 +28,15 @@ export class Threads {
         });
     }
 
-    step() {
+    /**
+     * Updates the thread "simulation"
+     * @param dt Delta time in ms
+     */
+    update(dt: number) {
         // TODO
         for (const thread of this.threads) {
-            /// Update y
+            
         }
-        this.steps += 1;
     }
 
 }
