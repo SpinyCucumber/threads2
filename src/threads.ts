@@ -1,5 +1,5 @@
 import { v4 as uuid } from "uuid";
-import { randn } from "./utility";
+import { randInt } from "./utility";
 
 export interface ThreadOptions {
     y: number;
@@ -34,8 +34,7 @@ export class Threads {
     tickDur = 50;
     tickTimer = 0;
     // TESTING
-    /** Chance for a thread to split each tick */
-    splitChance = 0.01;
+    splitChance = 0.008;
 
     constructor(options: ThreadsOptions) {
         Object.assign(this, options);
@@ -52,7 +51,7 @@ export class Threads {
             if (Math.random() < this.splitChance) {
                 this.threads.push(new Thread({
                     y: thread.y,
-                    v: thread.v + 0.01 * randn(),
+                    v: thread.v + 0.03 * randInt(-3, 3)
                 }));
             }
         }
@@ -79,6 +78,11 @@ export class Threads {
         for (const thread of this.threads) {
             thread.y += (dt * thread.v);
             // TODO Make it interesting!
+            // TESTING
+            // Damping
+            let damping = 1e-4 * dt;
+            if (Math.abs(thread.v) < damping) thread.v = 0;
+            else thread.v -= damping * Math.sign(thread.v);
         }
 
     }

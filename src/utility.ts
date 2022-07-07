@@ -28,7 +28,16 @@ export function resizeCanvas(canvas: HTMLCanvasElement, newWidth: number, newHei
  */
 export function randn() {
     var u = 0, v = 0;
-    while(u === 0) u = Math.random(); //Converting [0,1) to (0,1)
-    while(v === 0) v = Math.random();
-    return Math.sqrt( -2.0 * Math.log( u ) ) * Math.cos( 2.0 * Math.PI * v );
+    while (u === 0) u = Math.random(); //Converting [0,1) to (0,1)
+    while (v === 0) v = Math.random();
+    return Math.sqrt(-2.0 * Math.log(u)) * Math.cos(2.0 * Math.PI * v);
+}
+
+/**
+ * Random uniform integer in range
+ * @param min Minimum value (inclusive)
+ * @param max Maximum value (inclusive)
+ */
+export function randInt(min, max) {
+    return Math.floor(Math.random() * (max - min + 1) + min)
 }
