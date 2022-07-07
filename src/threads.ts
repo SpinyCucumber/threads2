@@ -1,8 +1,21 @@
 import { v4 as uuid } from "uuid";
 
-export interface Thread {
+export interface ThreadOptions {
     y: number;
+    v?: number;
+}
+
+export class Thread {
+
+    y: number;
+    v: number = 0;
     id: string;
+
+    constructor(options: ThreadOptions) {
+        Object.assign(this, options);
+        this.id = uuid();
+    }
+
 }
 
 export interface ThreadsOptions {
@@ -22,10 +35,7 @@ export class Threads {
 
     populate() {
         // Testing
-        this.threads.push({
-            y: this.size/2,
-            id: uuid(),
-        });
+        this.threads.push(new Thread({ y: this.size/2 }));
     }
 
     /**
@@ -35,7 +45,7 @@ export class Threads {
     update(dt: number) {
         // TODO
         for (const thread of this.threads) {
-            
+            thread.y += (dt * thread.v);
         }
     }
 

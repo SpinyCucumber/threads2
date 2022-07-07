@@ -6,10 +6,6 @@ export interface ThreadsRendererOptions {
     speed?: number;
 }
 
-const defaults: Partial<ThreadsRendererOptions> = {
-    speed: 0.05
-}
-
 export class ThreadsRenderer {
 
     /** The canvas to render to */
@@ -20,10 +16,10 @@ export class ThreadsRenderer {
     /** The y position of each thread in the last frame */
     lastY = new Map<string, number>();
     lastX: number;
-    speed: number;
+    speed: number = 0.05;
 
     constructor(options: ThreadsRendererOptions) {
-        Object.assign(this, {...defaults, ...options});
+        Object.assign(this, options);
         // Create rendering context
         this.ctx = this.canvas.getContext("2d");
         this.ctx.lineWidth = 5;
