@@ -1,7 +1,7 @@
 import { v4 as uuid } from "uuid";
 
 export interface Thread {
-    pos: number;
+    y: number;
     id: string;
 }
 
@@ -24,7 +24,7 @@ export class Threads {
     populate() {
         // Testing
         this.threads.push({
-            pos: this.size/2,
+            y: this.size/2,
             id: uuid(),
         });
     }
@@ -32,7 +32,7 @@ export class Threads {
     step() {
         // TODO
         for (const thread of this.threads) {
-            /// Update position
+            /// Update y
         }
         this.steps += 1;
     }
