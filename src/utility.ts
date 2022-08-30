@@ -84,4 +84,8 @@ function* enumerateDirections() {
     }
 }
 
+export function sum(array: number[]): number {
+    return array.reduce((a, b) => a + b, 0);
+}
+
 export const Directions = Array.from(enumerateDirections()).map((vector, index) => new Direction(vector, index));
