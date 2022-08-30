@@ -1,43 +1,87 @@
 /**
- * Resizes a canvas while preserving canvas content
- * 
- * This is accomplished by copying the canvas to an off-screen buffer,
- * changing width/height, then copying the buffer back.
- * The old content is rendered at the top left.
- * @param canvas
- * @param newWidth
- * @param newHeight 
+ * A simple 2D Vector class supporting addition, subtraction, scaling, etc.
  */
-export function resizeCanvas(canvas: HTMLCanvasElement, newWidth: number, newHeight: number): void {
-    // Create temporary canvas to store pixel data
-    let buff = document.createElement('canvas');
-    buff.width = canvas.width;
-    buff.height = canvas.height;
-    // Copy pixel data
-    let buffCtx = buff.getContext("2d");
-    buffCtx.drawImage(canvas, 0, 0);
-    // Resize canvas and copy back pixel data
-    canvas.width = newWidth;
-    canvas.height = newHeight;
-    let ctx = canvas.getContext("2d");
-    ctx.drawImage(buff, 0, 0);
+export class Vector {
+
+    x: number
+    y: number
+
+    constructor(x = 0, y = 0) {
+        this.x = x;
+        this.y = y;
+    }
+
+    sum(other: Vector): Vector {
+        return new Vector(this.x + other.x, this.y + other.y);
+    }
+
+    diff(other: Vector): Vector {
+        return new Vector(this.x - other.x, this.y - other.y);
+    }
+
+    scaledBy(s: number): Vector {
+        return new Vector(s * this.x, s * this.y);
+    }
+
+    perp(): Vector {
+        return new Vector(-this.y, this.x);
+    }
+
 }
 
 /**
- * Standard Normal variate using Box-Muller transform.
+ * One of the eight cardinal/ordinal directions. Supports finding the opposite direction.
+ * Directions are indexed in clockwise order from the top left, and each direction is assigned a vector.
  */
-export function randn() {
-    var u = 0, v = 0;
-    while (u === 0) u = Math.random(); //Converting [0,1) to (0,1)
-    while (v === 0) v = Math.random();
-    return Math.sqrt(-2.0 * Math.log(u)) * Math.cos(2.0 * Math.PI * v);
+export class Direction {
+
+    vector: Vector
+    index: number
+
+    constructor(vector: Vector, index: number) {
+        this.vector = vector;
+        this.index = index;
+    }
+
+    get opposite(): Direction {
+        return Directions[(this.index + 4) % 8];
+    }
+
 }
 
 /**
- * Random uniform integer in range
- * @param min Minimum value (inclusive)
- * @param max Maximum value (inclusive)
+ * A simple 2D grid
  */
-export function randInt(min, max) {
-    return Math.floor(Math.random() * (max - min + 1) + min)
+export class Grid<T> {
+
+    private cells: T[][];
+    width: number
+    height: number
+
+    constructor(width: number, height: number, initializer: (x: number, y: number) => T) {
+        this.width = width;
+        this.height = height;
+        this.cells = [...Array(height).keys()].map(y => (
+            [...Array(width).keys()].map(x => initializer(x, y))
+        ))
+    }
+
+    get(position: Vector): T {
+        return this.cells[position.y][position.x];
+    }
+
 }
+
+function* enumerateDirections() {
+    let d = new Vector(-1, -1);
+    let v = new Vector(0, 1);
+    for (let i = 0; i < 4; i++) {
+        for (let j = 0; j < 2; j++) {
+            yield d;
+            d = d.sum(v);
+        }
+        v = v.perp();
+    }
+}
+
+export const Directions = Array.from(enumerateDirections()).map((vector, index) => new Direction(vector, index));
