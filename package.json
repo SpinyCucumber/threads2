@@ -31,6 +31,7 @@
     "webpack-dev-server": "^4.10.1"
   },
   "dependencies": {
+    "ts-priority-queue": "^0.1.1",
     "uuid": "^8.3.2"
   }
 }
