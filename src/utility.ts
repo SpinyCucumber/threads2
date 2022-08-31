@@ -27,6 +27,10 @@ export class Vector {
         return new Vector(-this.y, this.x);
     }
 
+    toString(): string {
+        return `(${this.x}, ${this.y})`;
+    }
+
 }
 
 /**
@@ -78,7 +82,7 @@ export class Grid<T> {
 
 function* enumerateDirections() {
     let d = new Vector(-1, -1);
-    let v = new Vector(0, 1);
+    let v = new Vector(1, 0);
     for (let i = 0; i < 4; i++) {
         for (let j = 0; j < 2; j++) {
             yield d;
