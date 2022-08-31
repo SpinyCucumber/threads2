@@ -1,3 +1,3 @@
-import { Cell, Tiles } from "./engine";
+import { Cell, tiles } from "./engine";
 
-console.log(Tiles);
+console.log(tiles);

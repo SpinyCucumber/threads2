@@ -31,7 +31,7 @@ export class Vector {
 
 /**
  * One of the eight cardinal/ordinal directions. Supports finding the opposite direction.
- * Directions are indexed in clockwise order from the top left, and each direction is assigned a vector.
+ * directions are indexed in clockwise order from the top left, and each direction is assigned a vector.
  */
 export class Direction {
 
@@ -44,7 +44,7 @@ export class Direction {
     }
 
     get opposite(): Direction {
-        return Directions[(this.index + 4) % 8];
+        return directions[(this.index + 4) % 8];
     }
 
 }
@@ -88,4 +88,4 @@ export function sum(array: number[]): number {
     return array.reduce((a, b) => a + b, 0);
 }
 
-export const Directions = Array.from(enumerateDirections()).map((vector, index) => new Direction(vector, index));
+export const directions = Array.from(enumerateDirections()).map((vector, index) => new Direction(vector, index));

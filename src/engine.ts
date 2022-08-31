@@ -1,4 +1,4 @@
-import { Directions, Direction, Grid, Vector, sum } from "./utility";
+import { directions, Direction, Grid, Vector, sum } from "./utility";
 
 export class Tile {
 
@@ -26,26 +26,38 @@ export class Tile {
 
 }
 
-export const Tiles = [
+export const tiles = [
    [0b00001000, 1],
    [0b10001000, 1],
+   [0b00001001, 1],
+   [0b01001000, 1],
    [0b10000100, 1],
    [0b10010000, 1],
    [0b00010001, 1],
    [0b01000100, 1],
-   [0b10000000, 1]
+   [0b10000000, 1],
 ].map(([connections, frequency], index) => new Tile(connections, frequency, index));
 
-const tilesWithConnection = new Map<Direction, Set<Tile>>(Directions.map(direction => (
-    [direction, new Set(Tiles.filter(tile => tile.hasConnection(direction)))]
-)));
+// A mapping between directions and tiles which have a connection along that direction
+const tilesWithConnection = directions.map(direction => (
+    new Set(tiles.filter(tile => tile.hasConnection(direction)))
+));
 
-const totalWeight = sum(Tiles.map(tile => tile.weight));
-const totalWeightLogWeight = sum(Tiles.map(tile => tile.weightLogWeight));
+// The sum of all tile weights, used for calculting cell entropy
+const totalWeight = sum(tiles.map(tile => tile.weight));
+// The sum of the quantity weight * log2(weight) of all tiles. Also used to calculate entropy
+const totalWeightLogWeight = sum(tiles.map(tile => tile.weightLogWeight));
+// The number of total enablers for a connection along a given direction
+// An "enabler" is a possible tile that connects with the given side
+const totalEnablers = tilesWithConnection.map(tiles => tiles.size);
+
+console.debug("tilesWithConnection:", tilesWithConnection);
+console.debug("totalEnablers:", totalEnablers);
 
 export class Cell {
 
-    possibleTiles = Array(Tiles.length).fill(true);
+    possibleTiles = new Set(tiles)
+    enablers = [...totalEnablers]
     isCollapsed = false
     weightSum = totalWeight
     weightLogWeightSum = totalWeightLogWeight
@@ -54,18 +66,21 @@ export class Cell {
         return Math.log2(this.weightSum) - (this.weightLogWeightSum / this.weightSum);
     }
 
-    disallowTile(tile: Tile) {
-        this.possibleTiles[tile.index] = false;
-        this.weightSum -= tile.weight;
-        this.weightLogWeightSum -= tile.weightLogWeight;
-    }
-    
-    disallowConnection(direction: Direction) {
-        // TODO
+    chooseTile(): Tile {
+        let remaining = Math.floor(Math.random() * this.weightSum);
+        for (const tile of this.possibleTiles) {
+            const { weight } = tile;
+            if (remaining >= weight)
+                remaining -= weight;
+            else
+                return tile;
+        }
     }
 
-    requireConnection(direction: Direction) {
-        // TODO
+    removeTile(tile: Tile) {
+        this.possibleTiles.delete(tile);
+        this.weightSum -= tile.weight;
+        this.weightLogWeightSum -= tile.weightLogWeight;
     }
 
 }
