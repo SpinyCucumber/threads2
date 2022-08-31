@@ -62,7 +62,7 @@ export class Grid<T> {
     width: number
     height: number
 
-    constructor(width: number, height: number, initializer: (Vector) => T) {
+    constructor(width: number, height: number, initializer: (Vector) => T = () => undefined) {
         this.width = width;
         this.height = height;
         this.cells = [...Array(height).keys()].map(y => (
@@ -74,8 +74,20 @@ export class Grid<T> {
         return this.cells[position.y][position.x];
     }
 
+    set(position: Vector, value: T) {
+        this.cells[position.y][position.x] = value;
+    }
+
     isValidPosition(position: Vector): boolean {
         return (position.x >= 0) && (position.y >= 0) && (position.x < this.width) && (position.y < this.height);
+    }
+
+    *keys(): Generator<Vector> {
+        for (let y = 0; y < this.height; y++) {
+            for (let x = 0; x < this.width; x++) {
+                yield new Vector(x, y);
+            }
+        }
     }
 
     *entries(): Generator<[Vector, T]> {

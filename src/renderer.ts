@@ -1,6 +1,12 @@
 import { Tile } from "./collapser";
 import { Vector, Grid } from "./utility";
 
+const possibleColors: string[] = [
+    "#ffffff",
+    "#ff6600",
+    "#336699",
+];
+
 type Curve = Vector[]
 
 function bakeTile(tile: Tile): Curve | undefined {
@@ -15,6 +21,55 @@ function bakeTile(tile: Tile): Curve | undefined {
     const start = connections.pop();
     const end = connections.pop() || center;
     return [start, center, center, end];
+}
+
+class Thread {
+
+    color: string
+
+    constructor() {
+        // Randomly pick color (uniformly)
+        this.color = possibleColors[Math.floor(Math.random() * possibleColors.length)];
+    }
+
+}
+
+function tagTiles(tileGrid: Grid<Tile>): Grid<Thread> {
+
+    const { width, height } = tileGrid;
+
+    const tagGrid = new Grid<Thread>(width, height);
+
+    // Iteratively tags a group of connected tiles
+    function tagThread(start: Vector) {
+        // Create thread
+        const thread = new Thread();
+        const positionStack: Vector[] = [start];
+        let toTag: Vector;
+
+        while (toTag = positionStack.pop()) {
+            // Tag position with thread
+            tagGrid.set(toTag, thread);
+            // Attempt to tag neighbors
+            for (const direction of tileGrid.get(toTag).connections) {
+                const neighborPosition = toTag.sum(direction.vector);
+                if (!tileGrid.isValidPosition(neighborPosition)) continue;
+                // If neighbor has already been tagged, skip
+                // Otherwise add neighbor position to stack
+                if (tagGrid.get(neighborPosition) !== undefined) continue;
+                positionStack.push(neighborPosition);
+            }
+        }
+    }
+
+    // Tag all positions
+    for (const position of tileGrid.keys()) {
+        if (tagGrid.get(position) !== undefined) continue;
+        tagThread(position);
+    }
+
+    return tagGrid;
+
 }
 
 interface RendererInitializer {
@@ -37,11 +92,19 @@ export class Renderer {
         )));
     }
 
-    run(grid: Grid<Tile>, context: CanvasRenderingContext2D) {
+    run(tileGrid: Grid<Tile>, context: CanvasRenderingContext2D) {
+        // Tag contiguous groups of tiles (threads)
+        const tagGrid = tagTiles(tileGrid);
         // Convert grid of tiles to grid of curves
-        const curveGrid = grid.map(tile => this.bakedTiles.get(tile));
+        const curveGrid = tileGrid.map(tile => this.bakedTiles.get(tile));
         for (const [position, curve] of curveGrid.entries()) {
-            if (curve) this.renderCurve(curve, position, context);
+            if (curve === undefined) continue;
+            const odd = Boolean((position.x + position.y) % 2);
+            context.globalCompositeOperation = odd ? "destination-over" : "source-over";
+            // Retrieve thread at position
+            const thread = tagGrid.get(position);
+            context.strokeStyle = thread.color;
+            this.renderCurve(curve, position, context);
         }
     }
 

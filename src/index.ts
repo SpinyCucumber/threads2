@@ -3,7 +3,7 @@ import { Renderer } from "./renderer";
 import "./style.scss";
 
 const tiles = [
-    [0b00001000, 1],
+    [0b00001000, 2],
     [0b10001000, 8],
     [0b00001001, 4],
     [0b01001000, 4],
@@ -11,7 +11,7 @@ const tiles = [
     [0b10010000, 4],
     [0b00010001, 4],
     [0b01000100, 4],
-    [0b10000000, 1],
+    [0b10000000, 2],
 ].map(([connections, frequency], index) => new Tile(connections, frequency, index));
 
 const width = 20;
