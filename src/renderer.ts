@@ -3,11 +3,13 @@ import { Vector, Grid } from "./utility";
 
 type Curve = Vector[]
 
-function bakeTile(tile: Tile): Curve {
+function bakeTile(tile: Tile): Curve | undefined {
     // If tile has two connections, tile is non-terminal.
     // The endpoints of the curve are the edges/corners corresponding to the connection.
     // If the tile has only one connection, the tile is terminal.
     // In this case, one endpoint is the connecion, and the other is the center of the tile.
+    // If the tile has zero connections (empty tile), return nothing
+    if (tile.connections.size === 0) return;
     const center = new Vector(0, 0);
     const connections = Array.from(tile.connections).map(direction => direction.vector);
     const start = connections.pop();
@@ -23,7 +25,7 @@ interface RendererInitializer {
 
 export class Renderer {
 
-    bakedTiles: Map<Tile, Curve>
+    bakedTiles: Map<Tile, Curve | undefined>
     scaleX: number
     scaleY: number
 
@@ -39,7 +41,7 @@ export class Renderer {
         // Convert grid of tiles to grid of curves
         const curveGrid = grid.map(tile => this.bakedTiles.get(tile));
         for (const [position, curve] of curveGrid.entries()) {
-            this.renderCurve(curve, position, context);
+            if (curve) this.renderCurve(curve, position, context);
         }
     }
 
