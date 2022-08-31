@@ -1,4 +1,4 @@
-import { Collapser, Tile } from "./grid-collapser";
+import { Collapser, Tile } from "./collapser";
 import { Vector } from "./utility";
 
 const tiles = [
@@ -13,8 +13,8 @@ const tiles = [
     [0b10000000, 1],
 ].map(([connections, frequency], index) => new Tile(connections, frequency, index));
 
-const width = 8;
-const height = 8;
+const width = 10;
+const height = 10;
 const collapser = new Collapser(width, height, tiles, () => 0);
 const grid = collapser.run();
 
