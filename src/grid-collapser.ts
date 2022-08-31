@@ -24,6 +24,12 @@ export class Tile {
         return Boolean((this.connections >> direction.index) & 1);
     }
 
+    *getConnections() {
+        for (const direction of directions) {
+            if (this.hasConnection(direction)) yield direction;
+        }
+    }
+
 }
 
 export const tiles = [
@@ -85,12 +91,66 @@ export class Cell {
 
 }
 
-class Engine {
+interface Removal {
+    position: Vector
+    tile: Tile
+}
 
-    cells: Grid<Cell>
+class GridCollapser {
 
-    collapseCell(cell: Cell) {
-        // TODO
+    grid: Grid<Cell>
+    removals: Removal[] = []
+
+    /**
+     * Collapses the cell at a given position
+     * This involves picking a tile from the cell's possible tiles,
+     * removing the other possible tiles, and propagating the changes.
+     */
+    collapseCellAt(position: Vector) {
+        const cell = this.grid.get(position);
+        const chosenTile = cell.chooseTile();
+        // Mark cell as collapsed
+        cell.isCollapsed = true;
+        // Remove tiles that were not chosen
+        for (const tile of cell.possibleTiles) {
+            if (tile === chosenTile) continue;
+            cell.possibleTiles.delete(tile);
+            // Push removal so we can propogate removals
+            this.removals.push({ position, tile });
+        }
+    }
+
+    propogate() {
+        let removal: Removal;
+        while (removal = this.removals.pop()) {
+            // For each of the removed tile's connections, decrement the "enabler" count of the neighbor
+            // along the specified connection
+            const { tile: removedTile, position } = removal;
+            for (const direction of removedTile.getConnections()) {
+                // Get neighbor
+                const neighborPosition = position.sum(direction.vector);
+                if (!this.grid.isValidPosition(neighborPosition)) continue;
+                const neighbor = this.grid.get(neighborPosition);
+                // Skip collapsed neighbors
+                if (neighbor.isCollapsed) continue;
+                // Decrement enabler count of opposite direction
+                const index = direction.opposite.index;
+                neighbor.enablers[index] -= 1;
+                // If enabler count is 0 (all enablers have been removed), we remove tiles from the neighbor
+                // that have a connection along the specified direction
+                if (neighbor.enablers[index] === 0) {
+                    for (const tile of tilesWithConnection[index]) {
+                        // If tile has already been removed, skip
+                        if (!neighbor.possibleTiles.has(tile)) continue;
+                        // Remove tile
+                        neighbor.removeTile(tile);
+                        // TODO Push tile to heap again
+                        // Push removal
+                        this.removals.push({ position: neighborPosition, tile });
+                    }
+                }
+            }
+        }
     }
 
 }

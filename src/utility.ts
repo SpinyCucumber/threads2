@@ -70,6 +70,10 @@ export class Grid<T> {
         return this.cells[position.y][position.x];
     }
 
+    isValidPosition(position: Vector): boolean {
+        return (position.x >= 0) && (position.y >= 0) && (position.x < this.width) && (position.y < this.height);
+    }
+
 }
 
 function* enumerateDirections() {

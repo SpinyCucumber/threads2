@@ -1,3 +1,3 @@
-import { Cell, tiles } from "./engine";
+import { Cell, tiles } from "./grid-collapser";
 
 console.log(tiles);
