@@ -5,5 +5,23 @@ html, body {
 }
 
 body {
-    background-color: #1a2330;
+    background-color: #000000;
+}
+
+.full-height {
+    height: 100%;
+}
+
+.vbox {
+    display: flex;
+    flex-direction: column;
+    &.align-center {
+        align-items: center;
+    }
+    &.justify-center {
+        justify-content: center;
+    }
+    &.grow {
+        flex-grow: 1;
+    }
 }

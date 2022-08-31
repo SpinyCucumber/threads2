@@ -99,7 +99,7 @@ export class Collapser {
     tilesWithConnection: Set<Tile>[]
     tilesWithoutConnection: Set<Tile>[]
 
-    constructor(width, height, tiles, noiseFunction) {
+    constructor({ width, height, tiles, noiseFunction }: CollapserInitializer) {
         this.uncollapsedCells = width * height;
         // A mapping between directions and tiles which have a connection along that direction
         this.tilesWithConnection = directions.map(direction => (
@@ -139,7 +139,6 @@ export class Collapser {
      */
     run(): Grid<Tile> {
         console.debug('Collapsing grid!');
-        console.log(directions);
         while (this.uncollapsedCells > 0) {
             const cell = this.chooseCell();
             this.collapseCell(cell);

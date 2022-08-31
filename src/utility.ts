@@ -78,6 +78,14 @@ export class Grid<T> {
         return (position.x >= 0) && (position.y >= 0) && (position.x < this.width) && (position.y < this.height);
     }
 
+    *entries(): Generator<[Vector, T]> {
+        for (let y = 0; y < this.height; y++) {
+            for (let x = 0; x < this.width; x++) {
+                yield [new Vector(x, y), this.cells[y][x]];
+            }
+        }
+    }
+
     map<U>(func: (T) => U): Grid<U> {
         return new Grid(this.width, this.height, position => func(this.get(position)));
     }
