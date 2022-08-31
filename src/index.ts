@@ -1,10 +1,22 @@
-import { GridCollapser } from "./grid-collapser";
+import { Collapser, Tile } from "./grid-collapser";
 import { Vector } from "./utility";
 
-const width = 5;
-const height = 5;
-const collapser = new GridCollapser(width, height);
-collapser.run();
+const tiles = [
+    [0b00001000, 1],
+    [0b10001000, 4],
+    [0b00001001, 1],
+    [0b01001000, 1],
+    [0b10000100, 1],
+    [0b10010000, 1],
+    [0b00010001, 1],
+    [0b01000100, 1],
+    [0b10000000, 1],
+].map(([connections, frequency], index) => new Tile(connections, frequency, index));
+
+const width = 8;
+const height = 8;
+const collapser = new Collapser(width, height, tiles, () => 0);
+const grid = collapser.run();
 
 const tileSymbols = [
     " x-", "---", " \\--", "/--", "--/", "--\\", " \\ ", " / ", "-x "
@@ -12,7 +24,7 @@ const tileSymbols = [
 
 for (let y = 0; y < height; y++) {
     console.log([...Array(width).keys()].map(x => {
-        const cell = collapser.grid.get(new Vector(x, y));
-        return tileSymbols[cell.value.index];
+        const tile = grid.get(new Vector(x, y));
+        return tileSymbols[tile.index];
     }).join(" "));
 }

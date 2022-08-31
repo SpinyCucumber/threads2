@@ -62,7 +62,7 @@ export class Grid<T> {
     width: number
     height: number
 
-    constructor(width: number, height: number, initializer: (position: Vector) => T) {
+    constructor(width: number, height: number, initializer: (Vector) => T) {
         this.width = width;
         this.height = height;
         this.cells = [...Array(height).keys()].map(y => (
@@ -76,6 +76,10 @@ export class Grid<T> {
 
     isValidPosition(position: Vector): boolean {
         return (position.x >= 0) && (position.y >= 0) && (position.x < this.width) && (position.y < this.height);
+    }
+
+    map<U>(func: (T) => U): Grid<U> {
+        return new Grid(this.width, this.height, position => func(this.get(position)));
     }
 
 }

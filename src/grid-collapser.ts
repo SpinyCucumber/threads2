@@ -26,52 +26,30 @@ export class Tile {
 
 }
 
-// TODO Should allow user of GridCollapser to define tiles
-export const tiles = [
-   [0b00001000, 1],
-   [0b10001000, 1],
-   [0b00001001, 1],
-   [0b01001000, 1],
-   [0b10000100, 1],
-   [0b10010000, 1],
-   [0b00010001, 1],
-   [0b01000100, 1],
-   [0b10000000, 1],
-].map(([connections, frequency], index) => new Tile(connections, frequency, index));
-
-// A mapping between directions and tiles which have a connection along that direction
-const tilesWithConnection = directions.map(direction => (
-    new Set(tiles.filter(tile => tile.connections.has(direction)))
-));
-
-// The sum of all tile weights, used for calculting cell entropy
-const totalWeight = sum(tiles.map(tile => tile.weight));
-// The sum of the quantity weight * log2(weight) of all tiles. Also used to calculate entropy
-const totalWeightLogWeight = sum(tiles.map(tile => tile.weightLogWeight));
-// The number of total enablers for a connection along a given direction
-// An "enabler" is a possible tile that connects with the given side
-const totalEnablers = tilesWithConnection.map(tiles => tiles.size);
-
-function createEntropyNoise(): number {
-    return Math.random() * 0;
+interface CellInitializer {
+    position: Vector
+    possibleTiles: Set<Tile>
+    enablers: number[]
+    disablers: number[]
+    weightSum: number
+    weightLogWeightSum: number
+    entropyNoise: number
 }
 
-console.debug("tilesWithConnection:", tilesWithConnection);
-console.debug("totalEnablers:", totalEnablers);
-
-export class Cell {
+class Cell {
 
     position: Vector
-    possibleTiles = new Set(tiles)
-    enablers = [...totalEnablers]
+    possibleTiles: Set<Tile>
+    enablers: number[]
+    disablers: number[]
     // The collapsed value. If undefined, cell is uncollapsed
     value?: Tile
-    weightSum = totalWeight
-    weightLogWeightSum = totalWeightLogWeight
-    entropyNoise = createEntropyNoise()
+    weightSum: number
+    weightLogWeightSum: number
+    entropyNoise: number
 
-    constructor(position: Vector) {
-        this.position = position;
+    constructor(initializer: CellInitializer) {
+        Object.assign(this, initializer);
     }
 
     get entropy(): number {
@@ -102,7 +80,14 @@ interface Removal {
     tile: Tile
 }
 
-export class GridCollapser {
+export interface CollapserInitializer {
+    width: number
+    height: number
+    tiles: Tile[]
+    noiseFunction: () => number
+} 
+
+export class Collapser {
 
     grid: Grid<Cell>
     removals: Removal[] = []
@@ -111,12 +96,38 @@ export class GridCollapser {
     // We use a priority queue to track the cells with the minimum entropy
     // to make collapsing cells quicker
     minEntropy = new PriorityQueue<Cell>({ comparator: (a, b) => (a.entropy - b.entropy) })
+    tilesWithConnection: Set<Tile>[]
+    tilesWithoutConnection: Set<Tile>[]
 
-    constructor(width, height) {
+    constructor(width, height, tiles, noiseFunction) {
         this.uncollapsedCells = width * height;
+        // A mapping between directions and tiles which have a connection along that direction
+        this.tilesWithConnection = directions.map(direction => (
+            new Set(tiles.filter(tile => tile.connections.has(direction)))
+        ));
+        // A mapping between directions and tiles which DON'T have a connection along that direction
+        this.tilesWithoutConnection = directions.map(direction => (
+            new Set(tiles.filter(tile => !tile.connections.has(direction)))
+        ));
+        // The sum of all tile weights, used for calculting cell entropy
+        const weightSum = sum(tiles.map(tile => tile.weight));
+        // The sum of the quantity weight * log2(weight) of all tiles. Also used to calculate entropy
+        const weightLogWeightSum = sum(tiles.map(tile => tile.weightLogWeight));
+        // The number of total enablers for a connection along a given direction
+        // An "enabler" is a possible tile that connects with the given side
+        const enablers = this.tilesWithConnection.map(tiles => tiles.size);
+        const disablers = this.tilesWithoutConnection.map(tiles => tiles.size);
         // Initialize grid and enqueue cells to entropy heap
         this.grid = new Grid<Cell>(width, height, position => {
-            const cell = new Cell(position);
+            const cell = new Cell({
+                position,
+                possibleTiles: new Set(tiles),
+                weightSum,
+                weightLogWeightSum,
+                enablers: [...enablers],
+                disablers: [...disablers],
+                entropyNoise: noiseFunction()
+            });
             this.minEntropy.queue(cell);
             return cell;
         });
@@ -126,7 +137,7 @@ export class GridCollapser {
      * Runs the wave function collapse algorithm,
      * iteratively collapsing cells until all cells have been collapsed
      */
-    run() {
+    run(): Grid<Tile> {
         console.debug('Collapsing grid!');
         console.log(directions);
         while (this.uncollapsedCells > 0) {
@@ -135,6 +146,7 @@ export class GridCollapser {
             this.propagate();
             this.uncollapsedCells -= 1;
         }
+        return this.grid.map(cell => cell.value);
     }
 
     /**
@@ -174,30 +186,52 @@ export class GridCollapser {
             // along the specified connection
             const { tile: removedTile, cell } = removal;
             console.debug(`Propagating removal of tile ${removedTile.index} from cell ${cell.position}`);
-            for (const direction of removedTile.connections) {
+            for (const direction of directions) {
                 // Get neighbor
                 const neighborPosition = cell.position.sum(direction.vector);
                 if (!this.grid.isValidPosition(neighborPosition)) continue;
                 const neighbor = this.grid.get(neighborPosition);
                 // Skip collapsed neighbors
                 if (neighbor.value !== undefined) continue;
-                // Decrement enabler count of opposite direction
                 const index = direction.opposite.index;
-                console.debug(`Decrementing enablers of cell ${neighbor.position} for connection ${direction.opposite.vector}`);
-                neighbor.enablers[index] -= 1;
-                // If enabler count is 0 (all enablers have been removed), we remove tiles from the neighbor
-                // that have a connection along the specified direction
-                if (neighbor.enablers[index] === 0) {
-                    for (const tile of tilesWithConnection[index]) {
-                        // If tile has already been removed, skip
-                        if (!neighbor.possibleTiles.has(tile)) continue;
-                        // Remove tile
-                        console.debug(`Removing tile ${tile.index} from cell ${neighbor.position}`);
-                        neighbor.removeTile(tile);
-                        // Entropy changed, so re-queue cell
-                        this.minEntropy.queue(neighbor);
-                        // Push removal
-                        this.removals.push({ cell: neighbor, tile });
+                // TODO Find a better pattern here!
+                if (removedTile.connections.has(direction)) {
+                    // Decrement enabler count of opposite direction
+                    console.debug(`Decrementing enablers of cell ${neighbor.position} for connection ${direction.opposite.vector}`);
+                    neighbor.enablers[index] -= 1;
+                    // If enabler count is 0 (all enablers have been removed), we remove tiles from the neighbor
+                    // that have a connection along the specified direction
+                    if (neighbor.enablers[index] === 0) {
+                        for (const tile of this.tilesWithConnection[index]) {
+                            // If tile has already been removed, skip
+                            if (!neighbor.possibleTiles.has(tile)) continue;
+                            // Remove tile
+                            console.debug(`Removing tile ${tile.index} from cell ${neighbor.position}`);
+                            neighbor.removeTile(tile);
+                            // Entropy changed, so re-queue cell
+                            this.minEntropy.queue(neighbor);
+                            // Push removal
+                            this.removals.push({ cell: neighbor, tile });
+                        }
+                    }
+                } else {
+                    // Decrement disabler count of opposite direction
+                    console.debug(`Decrementing disablers of cell ${neighbor.position} for connection ${direction.opposite.vector}`);
+                    neighbor.disablers[index] -= 1;
+                    // If disabler count is 0 (all disablers have been removed), we remove tiles from the neighbor
+                    // that have a connection along the specified direction
+                    if (neighbor.disablers[index] === 0) {
+                        for (const tile of this.tilesWithoutConnection[index]) {
+                            // If tile has already been removed, skip
+                            if (!neighbor.possibleTiles.has(tile)) continue;
+                            // Remove tile
+                            console.debug(`Removing tile ${tile.index} from cell ${neighbor.position}`);
+                            neighbor.removeTile(tile);
+                            // Entropy changed, so re-queue cell
+                            this.minEntropy.queue(neighbor);
+                            // Push removal
+                            this.removals.push({ cell: neighbor, tile });
+                        }
                     }
                 }
             }
