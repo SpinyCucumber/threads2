@@ -1,11 +1,22 @@
 import { Tile } from "./collapser";
-import { Vector, Grid } from "./utility";
+import { Vector, Grid, sum } from "./utility";
 
-const possibleColors: string[] = [
-    "#ffffff",
-    "#ff6600",
-    "#336699",
+const possibleColors: [string, number][] = [
+    ["#ffffff", 7],
+    ["#ff0000", 1],
 ];
+
+const totalColorWeight = sum(possibleColors.map(([color, weight]) => weight));
+
+function chooseColor(): string {
+    let remaining = Math.floor(Math.random() * totalColorWeight);
+    for (const [color, weight] of possibleColors) {
+        if (remaining >= weight)
+            remaining -= weight;
+        else
+            return color;
+    }
+}
 
 type Curve = Vector[]
 
@@ -28,8 +39,8 @@ class Thread {
     color: string
 
     constructor() {
-        // Randomly pick color (uniformly)
-        this.color = possibleColors[Math.floor(Math.random() * possibleColors.length)];
+        // Randomly pick color
+        this.color = chooseColor();
     }
 
 }

@@ -3,19 +3,19 @@ import { Renderer } from "./renderer";
 import "./style.scss";
 
 const tiles = [
-    [0b00001000, 2],
-    [0b10001000, 8],
+    [0b00001000, 4],
+    [0b10001000, 20],
     [0b00001001, 4],
     [0b01001000, 4],
     [0b10000100, 4],
     [0b10010000, 4],
     [0b00010001, 4],
     [0b01000100, 4],
-    [0b10000000, 2],
+    [0b10000000, 4],
 ].map(([connections, frequency], index) => new Tile(connections, frequency, index));
 
-const width = 20;
-const height = 20;
+const width = 30;
+const height = 30;
 const collapser = new Collapser({ width, height, tiles, noiseFunction: () => 0.1 * Math.random() });
 const grid = collapser.run();
 
