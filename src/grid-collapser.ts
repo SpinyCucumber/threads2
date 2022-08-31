@@ -1,12 +1,9 @@
 import { directions, Direction, Grid, Vector, sum } from "./utility";
-import PriorityQueue from "ts-priority-queue"
+import PriorityQueue from "js-priority-queue"
 
 export class Tile {
 
-    /**
-     * An 8-bit number, where each bit determines whether the tile has a connection along the direction with that index.
-     */
-    connections: number;
+    connections: Set<Direction>;
     /**
      * The relative frequency of the tile. Determines how often the tile appears in the output
      */
@@ -14,25 +11,22 @@ export class Tile {
     weightLogWeight: number;
     index: number;
 
+    /**
+     * Constructs a new tile
+     * @param connections An 8-bit number, where each bit determines whether the tile has a connection along the direction with that index.
+     * @param weight 
+     * @param index 
+     */
     constructor(connections: number, weight: number, index: number) {
-        this.connections = connections;
+        this.connections = new Set(directions.filter(({ index }) => (connections >> index) & 1));
         this.weight = weight;
         this.weightLogWeight = weight * Math.log2(weight);
         this.index = index;
     }
 
-    hasConnection(direction: Direction): boolean {
-        return Boolean((this.connections >> direction.index) & 1);
-    }
-
-    *getConnections() {
-        for (const direction of directions) {
-            if (this.hasConnection(direction)) yield direction;
-        }
-    }
-
 }
 
+// TODO Should allow user of GridCollapser to define tiles
 export const tiles = [
    [0b00001000, 1],
    [0b10001000, 1],
@@ -47,7 +41,7 @@ export const tiles = [
 
 // A mapping between directions and tiles which have a connection along that direction
 const tilesWithConnection = directions.map(direction => (
-    new Set(tiles.filter(tile => tile.hasConnection(direction)))
+    new Set(tiles.filter(tile => tile.connections.has(direction)))
 ));
 
 // The sum of all tile weights, used for calculting cell entropy
@@ -70,7 +64,8 @@ export class Cell {
     position: Vector
     possibleTiles = new Set(tiles)
     enablers = [...totalEnablers]
-    isCollapsed = false
+    // The collapsed value. If undefined, cell is uncollapsed
+    value?: Tile
     weightSum = totalWeight
     weightLogWeightSum = totalWeightLogWeight
     entropyNoise = createEntropyNoise()
@@ -107,7 +102,7 @@ interface Removal {
     tile: Tile
 }
 
-class GridCollapser {
+export class GridCollapser {
 
     grid: Grid<Cell>
     removals: Removal[] = []
@@ -148,7 +143,7 @@ class GridCollapser {
     chooseCell(): Cell {
         let cell: Cell;
         while (cell = this.minEntropy.dequeue()) {
-            if (!cell.isCollapsed) return cell;
+            if (cell.value === undefined) return cell;
         }
     }
 
@@ -158,13 +153,11 @@ class GridCollapser {
      * removing the other possible tiles, and propagating the changes.
      */
     collapseCell(cell: Cell) {
-        const chosenTile = cell.chooseTile();
-        // Mark cell as collapsed
-        cell.isCollapsed = true;
+        // Set cell value
+        cell.value = cell.chooseTile();
         // Remove tiles that were not chosen
         for (const tile of cell.possibleTiles) {
-            if (tile === chosenTile) continue;
-            cell.possibleTiles.delete(tile);
+            if (tile === cell.value) continue;
             // Push removal so we can propogate removals
             this.removals.push({ cell, tile });
         }
@@ -176,13 +169,13 @@ class GridCollapser {
             // For each of the removed tile's connections, decrement the "enabler" count of the neighbor
             // along the specified connection
             const { tile: removedTile, cell } = removal;
-            for (const direction of removedTile.getConnections()) {
+            for (const direction of removedTile.connections) {
                 // Get neighbor
                 const neighborPosition = cell.position.sum(direction.vector);
                 if (!this.grid.isValidPosition(neighborPosition)) continue;
                 const neighbor = this.grid.get(neighborPosition);
                 // Skip collapsed neighbors
-                if (neighbor.isCollapsed) continue;
+                if (neighbor.value !== undefined) continue;
                 // Decrement enabler count of opposite direction
                 const index = direction.opposite.index;
                 neighbor.enablers[index] -= 1;
