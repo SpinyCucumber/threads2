@@ -99,6 +99,7 @@ export class Renderer {
         const curveGrid = tileGrid.map(tile => this.bakedTiles.get(tile));
         for (const [position, curve] of curveGrid.entries()) {
             if (curve === undefined) continue;
+            // Alternate depth to render thread crossings correctly
             const odd = Boolean((position.x + position.y) % 2);
             context.globalCompositeOperation = odd ? "destination-over" : "source-over";
             // Retrieve thread at position
