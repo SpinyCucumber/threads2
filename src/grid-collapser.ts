@@ -1,4 +1,5 @@
 import { directions, Direction, Grid, Vector, sum } from "./utility";
+import PriorityQueue from "ts-priority-queue"
 
 export class Tile {
 
@@ -57,19 +58,29 @@ const totalWeightLogWeight = sum(tiles.map(tile => tile.weightLogWeight));
 // An "enabler" is a possible tile that connects with the given side
 const totalEnablers = tilesWithConnection.map(tiles => tiles.size);
 
+function createEntropyNoise(): number {
+    return Math.random() * 0.1;
+}
+
 console.debug("tilesWithConnection:", tilesWithConnection);
 console.debug("totalEnablers:", totalEnablers);
 
 export class Cell {
 
+    position: Vector
     possibleTiles = new Set(tiles)
     enablers = [...totalEnablers]
     isCollapsed = false
     weightSum = totalWeight
     weightLogWeightSum = totalWeightLogWeight
+    entropyNoise = createEntropyNoise()
+
+    constructor(position: Vector) {
+        this.position = position;
+    }
 
     get entropy(): number {
-        return Math.log2(this.weightSum) - (this.weightLogWeightSum / this.weightSum);
+        return Math.log2(this.weightSum) - (this.weightLogWeightSum / this.weightSum) + this.entropyNoise;
     }
 
     chooseTile(): Tile {
@@ -92,7 +103,7 @@ export class Cell {
 }
 
 interface Removal {
-    position: Vector
+    cell: Cell
     tile: Tile
 }
 
@@ -100,14 +111,53 @@ class GridCollapser {
 
     grid: Grid<Cell>
     removals: Removal[] = []
+    // The number of uncollapsed cells
+    uncollapsedCells: number;
+    // We use a priority queue to track the cells with the minimum entropy
+    // to make collapsing cells quicker
+    minEntropy = new PriorityQueue<Cell>({ comparator: (a, b) => (a.entropy - b.entropy) })
+
+    constructor(width, height) {
+        this.uncollapsedCells = width * height;
+        // Initialize grid and enqueue cells to entropy heap
+        this.grid = new Grid<Cell>(width, height, position => {
+            const cell = new Cell(position);
+            this.minEntropy.queue(cell);
+            return cell;
+        });
+    }
 
     /**
-     * Collapses the cell at a given position
+     * Runs the wave function collapse algorithm,
+     * iteratively collapsing cells until all cells have been collapsed
+     */
+    run() {
+        while (this.uncollapsedCells > 0) {
+            const cell = this.chooseCell();
+            this.collapseCell(cell);
+            this.propogate();
+            this.uncollapsedCells -= 1;
+        }
+    }
+
+    /**
+     * Chooses the next cell to be collapsed
+     * The cell with the minimum entropy is chosen.
+     * Entropy is calculated using the cell's remaining possible tiles.
+     */
+    chooseCell(): Cell {
+        let cell: Cell;
+        while (cell = this.minEntropy.dequeue()) {
+            if (!cell.isCollapsed) return cell;
+        }
+    }
+
+    /**
+     * Collapses a given
      * This involves picking a tile from the cell's possible tiles,
      * removing the other possible tiles, and propagating the changes.
      */
-    collapseCellAt(position: Vector) {
-        const cell = this.grid.get(position);
+    collapseCell(cell: Cell) {
         const chosenTile = cell.chooseTile();
         // Mark cell as collapsed
         cell.isCollapsed = true;
@@ -116,7 +166,7 @@ class GridCollapser {
             if (tile === chosenTile) continue;
             cell.possibleTiles.delete(tile);
             // Push removal so we can propogate removals
-            this.removals.push({ position, tile });
+            this.removals.push({ cell, tile });
         }
     }
 
@@ -125,10 +175,10 @@ class GridCollapser {
         while (removal = this.removals.pop()) {
             // For each of the removed tile's connections, decrement the "enabler" count of the neighbor
             // along the specified connection
-            const { tile: removedTile, position } = removal;
+            const { tile: removedTile, cell } = removal;
             for (const direction of removedTile.getConnections()) {
                 // Get neighbor
-                const neighborPosition = position.sum(direction.vector);
+                const neighborPosition = cell.position.sum(direction.vector);
                 if (!this.grid.isValidPosition(neighborPosition)) continue;
                 const neighbor = this.grid.get(neighborPosition);
                 // Skip collapsed neighbors
@@ -144,9 +194,10 @@ class GridCollapser {
                         if (!neighbor.possibleTiles.has(tile)) continue;
                         // Remove tile
                         neighbor.removeTile(tile);
-                        // TODO Push tile to heap again
+                        // Entropy changed, so re-queue cell
+                        this.minEntropy.queue(neighbor);
                         // Push removal
-                        this.removals.push({ position: neighborPosition, tile });
+                        this.removals.push({ cell: neighbor, tile });
                     }
                 }
             }

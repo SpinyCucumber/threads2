@@ -58,11 +58,11 @@ export class Grid<T> {
     width: number
     height: number
 
-    constructor(width: number, height: number, initializer: (x: number, y: number) => T) {
+    constructor(width: number, height: number, initializer: (position: Vector) => T) {
         this.width = width;
         this.height = height;
         this.cells = [...Array(height).keys()].map(y => (
-            [...Array(width).keys()].map(x => initializer(x, y))
+            [...Array(width).keys()].map(x => initializer(new Vector(x, y)))
         ))
     }
 
