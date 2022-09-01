@@ -207,11 +207,11 @@ export class Collapser {
                             // Remove tile
                             console.debug(`Removing tile ${tile.index} from cell ${neighbor.position}`);
                             neighbor.removeTile(tile);
-                            // Entropy changed, so re-queue cell
-                            this.minEntropy.queue(neighbor);
                             // Push removal
                             this.removals.push({ cell: neighbor, tile });
                         }
+                        // Entropy changed, so re-queue cell
+                        this.minEntropy.queue(neighbor);
                     }
                 } else {
                     // Decrement disabler count of opposite direction
@@ -226,11 +226,11 @@ export class Collapser {
                             // Remove tile
                             console.debug(`Removing tile ${tile.index} from cell ${neighbor.position}`);
                             neighbor.removeTile(tile);
-                            // Entropy changed, so re-queue cell
-                            this.minEntropy.queue(neighbor);
                             // Push removal
                             this.removals.push({ cell: neighbor, tile });
                         }
+                        // Entropy changed, so re-queue cell
+                        this.minEntropy.queue(neighbor);
                     }
                 }
             }

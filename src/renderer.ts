@@ -20,18 +20,20 @@ function chooseColor(): string {
 
 type Curve = Vector[]
 
-function bakeTile(tile: Tile): Curve | undefined {
+function bakeTile(tile: Tile): Curve[] {
     // If tile has two connections, tile is non-terminal.
     // The endpoints of the curve are the edges/corners corresponding to the connection.
     // If the tile has only one connection, the tile is terminal.
     // In this case, one endpoint is the connecion, and the other is the center of the tile.
     // If the tile has zero connections (empty tile), return nothing
-    if (tile.connections.size === 0) return;
     const center = new Vector(0, 0);
     const connections = Array.from(tile.connections).map(direction => direction.vector);
-    const start = connections.pop();
-    const end = connections.pop() || center;
-    return [start, center, center, end];
+    if (connections.length === 2) {
+        return [[connections[0], center, center, connections[1] ]]
+    }
+    else {
+        return connections.map(connection => ([connection, center, center, center]));
+    }
 }
 
 class Thread {
@@ -91,7 +93,7 @@ interface RendererInitializer {
 
 export class Renderer {
 
-    bakedTiles: Map<Tile, Curve | undefined>
+    bakedTiles: Map<Tile, Curve[]>
     scaleX: number
     scaleY: number
 
@@ -108,15 +110,16 @@ export class Renderer {
         const tagGrid = tagTiles(tileGrid);
         // Convert grid of tiles to grid of curves
         const curveGrid = tileGrid.map(tile => this.bakedTiles.get(tile));
-        for (const [position, curve] of curveGrid.entries()) {
-            if (curve === undefined) continue;
+        for (const [position, curves] of curveGrid.entries()) {
             // Alternate depth to render thread crossings correctly
             const odd = Boolean((position.x + position.y) % 2);
             context.globalCompositeOperation = odd ? "destination-over" : "source-over";
             // Retrieve thread at position
             const thread = tagGrid.get(position);
             context.strokeStyle = thread.color;
-            this.renderCurve(curve, position, context);
+            curves.forEach(curve => {
+                this.renderCurve(curve, position, context);
+            });
         }
     }
 
