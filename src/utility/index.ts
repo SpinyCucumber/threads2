@@ -1,1 +1,1 @@
-export { Vector } from "./vector";
+export * from "./hex";
