@@ -36,6 +36,7 @@
     "webpack-dev-server": "^4.10.1"
   },
   "dependencies": {
+    "immutable": "^4.1.0",
     "js-priority-queue": "^0.1.5"
   }
 }
