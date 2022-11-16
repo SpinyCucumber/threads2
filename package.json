@@ -1,5 +1,5 @@
 {
-  "name": "threads",
+  "name": "threads2",
   "version": "1.0.0",
   "description": "This is a WIP procedural art project written using Javascript and HTML 5 canvas.",
   "private": true,
@@ -9,16 +9,17 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/SpinyCucumber/threads.git"
+    "url": "git+https://github.com/SpinyCucumber/threads2.git"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/SpinyCucumber/threads/issues"
+    "url": "https://github.com/SpinyCucumber/threads2/issues"
   },
-  "homepage": "https://github.com/SpinyCucumber/threads#readme",
+  "homepage": "https://github.com/SpinyCucumber/threads2#readme",
   "devDependencies": {
+    "@types/js-priority-queue": "0.0.6",
     "css-loader": "^6.7.1",
     "html-webpack-plugin": "^5.5.0",
     "sass": "^1.54.6",
@@ -31,8 +32,6 @@
     "webpack-dev-server": "^4.10.1"
   },
   "dependencies": {
-    "@types/js-priority-queue": "0.0.6",
-    "js-priority-queue": "^0.1.5",
-    "uuid": "^8.3.2"
+    "js-priority-queue": "^0.1.5"
   }
 }
