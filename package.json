@@ -5,7 +5,8 @@
   "private": true,
   "scripts": {
     "build": "webpack --mode=production",
-    "serve": "webpack serve --mode=development"
+    "serve": "webpack serve --mode=development",
+    "test": "jest"
   },
   "repository": {
     "type": "git",
@@ -27,6 +28,7 @@
     "sass": "^1.54.6",
     "sass-loader": "^13.0.2",
     "style-loader": "^3.3.1",
+    "ts-jest": "^29.0.3",
     "ts-loader": "^9.3.1",
     "typescript": "^4.8.2",
     "webpack": "^5.74.0",
