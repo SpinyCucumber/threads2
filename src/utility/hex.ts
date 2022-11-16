@@ -78,7 +78,20 @@ export function *enumerateDirections(): Generator<CubeVector> {
 }
 
 export function *enumerateRing(center: CubePosition, radius: number): Generator<CubePosition> {
-    // TODO
+    let p = center.add(directions[4].scale(radius));
+    for (let i = 0; i < 6; i++) {
+        for (let j = 0; j < radius; j++) {
+            yield p;
+            p = p.add(directions[i]);
+        }
+    }
+}
+
+export function *enumerateSpiral(center: CubePosition, radius: number): Generator<CubePosition> {
+    yield center;
+    for (let i = 0; i < radius; i++) {
+        yield *enumerateRing(center, i + 1);
+    }
 }
 
 export const directions = Array.from(enumerateDirections());
