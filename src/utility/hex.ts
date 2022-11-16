@@ -1,27 +1,19 @@
-export class CubePosition {
+import { Record } from "immutable";
 
-    q: number;
-    r: number;
-    s: number;
-    
-    constructor(q: number, r: number, s: number) {
-        this.q = q;
-        this.r = r;
-        this.s = s;
-    }
+export class CubePosition extends Record({ q: 0, r: 0, s: 0, }) {
 
     /**
      * Adding a vector to a position produces a position
      */
     add(v: CubeVector): CubePosition {
-        return new CubePosition(this.q + v.q, this.r + v.r, this.s + v.s);
+        return new CubePosition({ q: this.q + v.q, r: this.r + v.r, s: this.s + v.s });
     }
 
     /**
      * Substracting a position from a position produces a vector
      */
     subtract(p: CubePosition): CubeVector {
-        return new CubeVector(this.q - p.q, this.r - p.r, this.s - p.s);
+        return new CubeVector({ q: this.q - p.q, r: this.r - p.r, s: this.s - p.s });
     }
 
 }
@@ -30,38 +22,28 @@ export class CubePosition {
  * A hexagonal vector described using cube coordinates.
  * Unlike positions, vectors can be scaled and rotated.
  */
-export class CubeVector {
-
-    q: number;
-    r: number;
-    s: number;
-    
-    constructor(q: number, r: number, s: number) {
-        this.q = q;
-        this.r = r;
-        this.s = s;
-    }
+export class CubeVector extends Record({ q: 0, r: 0, s: 0, }) {
     
     add(v: CubeVector): CubeVector {
-        return new CubeVector(this.q + v.q, this.r + v.r, this.s + v.s);
+        return new CubeVector({ q: this.q + v.q, r: this.r + v.r, s: this.s + v.s });
     }
 
     scale(f: number) {
-        return new CubeVector(f * this.q, f * this.r, f * this.s);
+        return new CubeVector({ q: f * this.q, r: f * this.r, s: f * this.s });
     }
 
     /**
      * Rotates this hex vector 60 degrees clockwise
      */
     rotateRight() {
-        return new CubeVector(-this.r, -this.s, -this.q);
+        return new CubeVector({ q: -this.r, r: -this.s, s: -this.q });
     }
 
     /**
      * Rotates this hex vector 60 degrees counter-clockwise
      */
     rotateLeft() {
-        return new CubeVector(-this.s, -this.q, -this.r);
+        return new CubeVector({ q: -this.s, r: -this.q, s: -this.r });
     }
 
 }
@@ -70,7 +52,7 @@ export class CubeVector {
  * Enumerates the six possible directions in a cube coordinate system
  */
 export function *enumerateDirections(): Generator<CubeVector> {
-    let v = new CubeVector(1, 0, -1);
+    let v = new CubeVector({ q: 1, r: 0, s: -1 });
     for (let i = 0; i < 6; i++) {
         yield v;
         v = v.rotateRight();
