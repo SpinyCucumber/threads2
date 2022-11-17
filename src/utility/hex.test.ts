@@ -1,6 +1,6 @@
 import { test } from "@jest/globals"
 import { directions, CubeVector, CubePosition, enumerateRing, enumerateSpiral } from "./hex";
-import { Map } from "immutable";
+import * as Immutable from "immutable";
 
 test("should enumerate directions", () => {
     expect(directions).toEqual([
@@ -50,8 +50,8 @@ test("should enumerate spiral", () => {
     ]);
 });
 
-test("should support map", () => {
-    const map = Map([
+test("should support immutable map", () => {
+    const map = Immutable.Map([
         [new CubePosition({ q: 4, r: -2, s: -2 }), 4],
         [new CubePosition({ q: 1, r: -2, s: 1 }), -2],
     ]);

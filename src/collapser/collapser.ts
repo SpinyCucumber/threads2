@@ -1,34 +1,39 @@
 import { CubePosition } from "../utility";
-import { Map, Set, Seq } from "immutable";
 import PriorityQueue from "js-priority-queue";
+import * as Immutable from "immutable";
 
 export class CollapserError extends Error { }
 
-export class ConnectionClass {
-    // TODO
-}
+type TileID = number;
+type DirectionID = number;
 
 export interface TileOptions {
+    id: TileID;
     weight: number;
-    connections: Map<number, ConnectionClass>;
 }
 
 export class Tile {
 
+    id: TileID;
     /**
      * The relative frequency of the tile. Determines how often the tile appears in the output
      */
     weight: number;
     weightLogWeight: number;
-    /**
-     * Map between direction index and connection type.
-     * Describes what type of connection the tile has along each side.
-     */
-    connections: Map<number, ConnectionClass>;
 
     constructor(options: TileOptions) {
         Object.assign(this, options);
         this.weightLogWeight = this.weight * Math.log2(this.weight);
+    }
+
+}
+
+class AdjacencyRules {
+
+    compatibleTiles: Map<TileID, Map<DirectionID, TileID[]>>
+
+    constructor(rules: [TileID, TileID, DirectionID]) {
+        // TODO
     }
 
 }
@@ -81,7 +86,7 @@ class Cell {
     }
 
     removeTile(tile: Tile) {
-        this.allowedTiles = this.allowedTiles.delete(tile);
+        this.allowedTiles.delete(tile);
         this.weightSum -= tile.weight;
         this.weightLogWeightSum -= tile.weightLogWeight;
     }
@@ -90,14 +95,13 @@ class Cell {
 
 export interface CollapserOptions {
     positions: Iterable<CubePosition>;
-    tiles: Set<Tile>;
-    classes: Set<ConnectionClass>;
+    tiles: Tile[];
     noiseFunction: () => number;
 }
 
 export class Collapser {
 
-    cells: Map<CubePosition, Cell>;
+    cells: Immutable.Map<CubePosition, Cell>;
     /**
      * A priority queue containing tuples of cell positions and entropy, sorted by minimum entropy.
      * Used to quickly find the cell with minimum entropy to speed up collapsing
@@ -108,20 +112,22 @@ export class Collapser {
      * collapsing a cell so that we can propogate changes.
      */
     removedTiles: [CubePosition, Tile][] = [];
+    tiles: Map<TileID, Tile>;
 
-    constructor({ positions, tiles, classes, noiseFunction }: CollapserOptions) {
+    constructor({ positions, tiles, noiseFunction }: CollapserOptions) {
+        this.tiles = new Map(tiles.map(tile => ([tile.id, tile])));
         // The sum of all tile weights, used for calculting cell entropy
-        const weightSum = Seq(tiles).map(tile => tile.weight).reduce((a, b) => a + b, 0);
+        const weightSum = tiles.map(tile => tile.weight).reduce((a, b) => a + b, 0);
         // The sum of the quantity weight * log2(weight) of all tiles. Also used to calculate entropy
-        const weightLogWeightSum = Seq(tiles).map(tile => tile.weightLogWeight).reduce((a, b) => a + b, 0)
+        const weightLogWeightSum = tiles.map(tile => tile.weightLogWeight).reduce((a, b) => a + b, 0)
         const createCell = () => new Cell({
             weightSum,
             weightLogWeightSum,
-            allowedTiles: tiles,
+            allowedTiles: new Set(tiles),
             entropyNoise: noiseFunction(),
         });
         // Create new cell for each position
-        this.cells = Map(Seq(positions).map(position => ([position, createCell()])));
+        this.cells = Immutable.Map(Immutable.Seq(positions).map(position => ([position, createCell()])));
         // Queue each cell
         this.cells.forEach((cell, position) => {
             this.entropyHeap.queue([position, cell.entropy]);
@@ -158,7 +164,9 @@ export class Collapser {
         // Collapse cell
         cell.tile = cell.chooseTile();
         // Propogate tile removals
-        for (const tile of cell.allowedTiles.delete(cell.tile)) {
+        const toRemove = new Set(cell.allowedTiles);
+        toRemove.delete(cell.tile);
+        for (const tile of toRemove) {
             this.removedTiles.push([position, tile]);
         }
     }

@@ -1,6 +1,6 @@
-import { Record } from "immutable";
+import * as Immutable from "immutable";
 
-export class CubePosition extends Record({ q: 0, r: 0, s: 0, }) {
+export class CubePosition extends Immutable.Record({ q: 0, r: 0, s: 0, }) {
 
     /**
      * Adding a vector to a position produces a position
@@ -22,7 +22,7 @@ export class CubePosition extends Record({ q: 0, r: 0, s: 0, }) {
  * A hexagonal vector described using cube coordinates.
  * Unlike positions, vectors can be scaled and rotated.
  */
-export class CubeVector extends Record({ q: 0, r: 0, s: 0, }) {
+export class CubeVector extends Immutable.Record({ q: 0, r: 0, s: 0, }) {
     
     add(v: CubeVector): CubeVector {
         return new CubeVector({ q: this.q + v.q, r: this.r + v.r, s: this.s + v.s });
