@@ -1,5 +1,8 @@
 import { CubePosition } from "../utility";
 import { Map, Set, Seq } from "immutable";
+import PriorityQueue from "js-priority-queue";
+
+export class CollapserError extends Error { }
 
 export class ConnectionClass {
     // TODO
@@ -51,8 +54,11 @@ class Cell {
      * Small, random value added to entropy to resolve ties
      */
     entropyNoise: number
-
     allowedTiles: Set<Tile>;
+    /**
+     * The collapsed value of the cell. If undefined, the cell is uncollapsed.
+     */
+    tile: Tile = undefined;
 
     constructor(options: CellOptions) {
         Object.assign(this, options);
@@ -60,6 +66,10 @@ class Cell {
 
     get entropy(): number {
         return Math.log2(this.weightSum) - (this.weightLogWeightSum / this.weightSum) + this.entropyNoise;
+    }
+
+    get isCollapsed(): boolean {
+        return this.tile !== undefined;
     }
 
     chooseTile(): Tile {
@@ -88,6 +98,16 @@ export interface CollapserOptions {
 export class Collapser {
 
     cells: Map<CubePosition, Cell>;
+    /**
+     * A priority queue containing tuples of cell positions and entropy, sorted by minimum entropy.
+     * Used to quickly find the cell with minimum entropy to speed up collapsing
+     */
+    entropyHeap = new PriorityQueue<[CubePosition, number]>({ comparator: ([, a], [, b]) => a - b});
+    /**
+     * A list containing tuples of cell position and tile. Used to track what tiles are removed while
+     * collapsing a cell so that we can propogate changes.
+     */
+    removedTiles: [CubePosition, Tile][] = [];
 
     constructor({ positions, tiles, classes, noiseFunction }: CollapserOptions) {
         // The sum of all tile weights, used for calculting cell entropy
@@ -102,21 +122,52 @@ export class Collapser {
         });
         // Create new cell for each position
         this.cells = Map(Seq(positions).map(position => ([position, createCell()])));
+        // Queue each cell
+        this.cells.forEach((cell, position) => {
+            this.entropyHeap.queue([position, cell.entropy]);
+        });
     }
 
     /**
-     * Chooses the next cell to be collapsed
+     * Runs the wave function collapse algorithm,
+     * iteratively collapsing cells until all cells have been collapsed
      */
-    choosePosition(): CubePosition {
-        return null;
+    run() {
+        let position: CubePosition;
+        while ((position = this.chooseCell()) !== undefined) {
+            this.collapseCellAt(position);
+            this.propogate();
+        }
+    }
+
+    /**
+     * Chooses the next cell to be collapsed, or undefined if all cells have been collapsed.
+     * Returns the position of the cell to be collapsed.
+     * The cell with the minimum entropy is chosen.
+     */
+    chooseCell(): CubePosition | undefined {
+        while (this.entropyHeap.length > 0) {
+            const [position] = this.entropyHeap.dequeue();
+            if (!this.cells.get(position).isCollapsed) return position;
+        }
+        return undefined;
     }
 
     collapseCellAt(position: CubePosition) {
-        // TODO
+        const cell = this.cells.get(position);
+        // Collapse cell
+        cell.tile = cell.chooseTile();
+        // Propogate tile removals
+        for (const tile of cell.allowedTiles.delete(cell.tile)) {
+            this.removedTiles.push([position, tile]);
+        }
     }
 
     propogate() {
-        // TODO
+        while (this.removedTiles.length > 0) {
+            const [position, tile] = this.removedTiles.pop();
+            // TODO
+        }
     }
 
 }
