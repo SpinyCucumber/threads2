@@ -1,8 +1,9 @@
 import { test } from "@jest/globals"
-import { directions, CubeVector, CubePosition, enumerateRing, enumerateSpiral } from "./hex";
+import { CubeVector, CubePosition, enumerateRing, enumerateSpiral, enumerateDirections } from "./hex";
 import * as Immutable from "immutable";
 
 test("should enumerate directions", () => {
+    const directions = Array.from(enumerateDirections());
     expect(directions).toEqual([
         new CubeVector({ q: 1, r: 0, s: -1 }),
         new CubeVector({ q: -0, r: 1, s: -1 }),

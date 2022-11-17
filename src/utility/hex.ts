@@ -60,11 +60,11 @@ export function *enumerateDirections(): Generator<CubeVector> {
 }
 
 export function *enumerateRing(center: CubePosition, radius: number): Generator<CubePosition> {
-    let p = center.add(directions[4].scale(radius));
+    let p = center.add(direction(4).scale(radius));
     for (let i = 0; i < 6; i++) {
         for (let j = 0; j < radius; j++) {
             yield p;
-            p = p.add(directions[i]);
+            p = p.add(direction(i));
         }
     }
 }
@@ -76,4 +76,12 @@ export function *enumerateSpiral(center: CubePosition, radius: number): Generato
     }
 }
 
-export const directions = Array.from(enumerateDirections());
+export function opposite(d: number) {
+    return (d + 3) % 6;
+}
+
+export function direction(d: number) {
+    return directions[d];
+}
+
+const directions = Array.from(enumerateDirections());

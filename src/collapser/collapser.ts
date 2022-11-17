@@ -1,4 +1,4 @@
-import { CubePosition } from "../utility";
+import { CubePosition, DefaultedMap, direction, opposite, sum } from "../utility";
 import PriorityQueue from "js-priority-queue";
 import * as Immutable from "immutable";
 
@@ -28,12 +28,47 @@ export class Tile {
 
 }
 
+class TileSet {
+
+    private map: Map<TileID, Tile>;
+    /**
+     * The sum of all tile weights, used for calculting cell entropy
+     */
+    readonly weightSum: number;
+    /**
+     * The sum of the quantity weight * log2(weight) of all tiles. Also used to calculate entropy
+     */
+    readonly weightLogWeightSum: number;
+
+    constructor(tiles: Tile[]) {
+        this.map = new Map(tiles.map(tile => ([tile.id, tile])));
+        this.weightSum = sum(tiles.map(tile => tile.weight));
+        this.weightLogWeightSum = sum(tiles.map(tile => tile.weightLogWeight));
+    }
+
+    get(id: TileID) {
+        return this.map.get(id);
+    }
+
+    [Symbol.iterator]() {
+        return this.map.values();
+    }
+
+}
+
 class AdjacencyRules {
 
-    compatibleTiles: Map<TileID, Map<DirectionID, TileID[]>>
+    private compatibleTiles: Map<TileID, Map<DirectionID, TileID[]>> = new DefaultedMap(() => new DefaultedMap(() => []));
 
-    constructor(rules: [TileID, TileID, DirectionID]) {
-        // TODO
+    constructor(rules: [TileID, TileID, DirectionID][]) {
+        for (const [from, to, direction] of rules) {
+            this.compatibleTiles.get(from).get(direction).push(to);
+            this.compatibleTiles.get(to).get(opposite(direction)).push(from);
+        }
+    }
+
+    getCompatibleTiles(id: TileID): IterableIterator<[DirectionID, TileID[]]> {
+        return this.compatibleTiles.get(id).entries();
     }
 
 }
@@ -95,7 +130,8 @@ class Cell {
 
 export interface CollapserOptions {
     positions: Iterable<CubePosition>;
-    tiles: Tile[];
+    tiles: TileSet,
+    rules: AdjacencyRules;
     noiseFunction: () => number;
 }
 
@@ -112,20 +148,14 @@ export class Collapser {
      * collapsing a cell so that we can propogate changes.
      */
     removedTiles: [CubePosition, Tile][] = [];
-    tiles: Map<TileID, Tile>;
+    tiles: TileSet;
+    rules: AdjacencyRules;
 
-    constructor({ positions, tiles, noiseFunction }: CollapserOptions) {
-        this.tiles = new Map(tiles.map(tile => ([tile.id, tile])));
-        // The sum of all tile weights, used for calculting cell entropy
-        const weightSum = tiles.map(tile => tile.weight).reduce((a, b) => a + b, 0);
-        // The sum of the quantity weight * log2(weight) of all tiles. Also used to calculate entropy
-        const weightLogWeightSum = tiles.map(tile => tile.weightLogWeight).reduce((a, b) => a + b, 0)
-        const createCell = () => new Cell({
-            weightSum,
-            weightLogWeightSum,
-            allowedTiles: new Set(tiles),
-            entropyNoise: noiseFunction(),
-        });
+    constructor({ positions, tiles, rules, noiseFunction }: CollapserOptions) {
+        this.tiles = tiles;
+        this.rules = rules;
+        const { weightSum, weightLogWeightSum } = tiles;
+        const createCell = () => new Cell({ weightSum, weightLogWeightSum, allowedTiles: new Set(tiles), entropyNoise: noiseFunction() });
         // Create new cell for each position
         this.cells = Immutable.Map(Immutable.Seq(positions).map(position => ([position, createCell()])));
         // Queue each cell
@@ -174,7 +204,17 @@ export class Collapser {
     propogate() {
         while (this.removedTiles.length > 0) {
             const [position, tile] = this.removedTiles.pop();
-            // TODO
+            // For each direction (with compatible tiles), iterate over tiles that may appear next to removed tile along direction
+            for (const [d, compatible] of this.rules.getCompatibleTiles(tile.id)) {
+                // Find neighbor position
+                // Skip if neighbor does not exist at position or neighbor is collapsed
+                const neighbor = this.cells.get(position.add(direction(d)));
+                if (neighbor === undefined || neighbor.isCollapsed) continue;
+                // For each compatible tile, decrement enabler
+                for (const c of compatible) {
+                    // TODO
+                }
+            }
         }
     }
 
