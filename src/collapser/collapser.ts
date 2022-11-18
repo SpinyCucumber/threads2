@@ -7,11 +7,6 @@ export class CollapserError extends Error { }
 type TileID = number;
 type DirectionID = number;
 
-export interface TileOptions {
-    id: TileID;
-    weight: number;
-}
-
 export class Tile {
 
     id: TileID;
@@ -21,14 +16,15 @@ export class Tile {
     weight: number;
     weightLogWeight: number;
 
-    constructor(options: TileOptions) {
-        Object.assign(this, options);
+    constructor(id: TileID, weight: number) {
+        this.id = id;
+        this.weight = weight;
         this.weightLogWeight = this.weight * Math.log2(this.weight);
     }
 
 }
 
-class TileSet {
+export class TileSet {
 
     private map: Map<TileID, Tile>;
     /**
@@ -56,7 +52,7 @@ class TileSet {
 
 }
 
-class AdjacencyRules {
+export class AdjacencyRules {
 
     private compatibleTiles: Map<TileID, Map<DirectionID, TileID[]>>;
     readonly enablers: Map<TileID, Map<DirectionID, number>>;
@@ -83,7 +79,7 @@ class AdjacencyRules {
 
 }
 
-class EnablerCounter {
+export class EnablerCounter {
 
     counts: Map<DirectionID, number>;
     private disabled = false;
