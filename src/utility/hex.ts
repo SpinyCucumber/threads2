@@ -1,4 +1,5 @@
 import * as Immutable from "immutable";
+import { Position, Vector } from "./ortho";
 
 export class CubePosition extends Immutable.Record({ q: 0, r: 0, s: 0, }) {
 
@@ -44,6 +45,28 @@ export class CubeVector extends Immutable.Record({ q: 0, r: 0, s: 0, }) {
      */
     rotateLeft() {
         return new CubeVector({ q: -this.s, r: -this.q, s: -this.r });
+    }
+
+}
+
+export class CubeToOrthoTransform {
+    
+    qBasis: Vector;
+    rBasis: Vector;
+    origin: Position;
+
+    constructor(
+        qBasis = new Vector({ x: Math.sqrt(3), y: 0 }),
+        rBasis = new Vector({ x: Math.sqrt(3)/2, y: 3/2 }),
+        origin = new Position({ x: 0, y: 0 })
+    ) {
+        this.qBasis = qBasis;
+        this.rBasis = rBasis;
+        this.origin = origin;
+    }
+
+    apply(c: CubePosition): Position {
+        return this.origin.add(this.qBasis.scale(c.q)).add(this.rBasis.scale(c.r));
     }
 
 }
