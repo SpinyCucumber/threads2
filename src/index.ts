@@ -1,7 +1,8 @@
 import { Piece, PieceSet } from "./piece";
-import { CubePosition, enumerateSpiral } from "./utility";
+import { CubePosition, enumerateSpiral, Position } from "./utility";
 import { Collapser } from "./collapser";
 import "./style.scss";
+import { Part, PrimitiveType, Renderer } from "./renderer";
 
 const pieces = new PieceSet([
     new Piece(0, 0b100100, 1),
@@ -21,8 +22,16 @@ const collapser = new Collapser({
 });
 
 window.onload = () => {
-    const canvas: HTMLCanvasElement = document.querySelector("#canvas");
     // TODO
     const tiles = collapser.run();
     console.log(tiles.toJSON());
+    
+    // Renderer test!
+    const canvas: HTMLCanvasElement = document.querySelector("#canvas");
+    const parts: [number, Part][] = [
+        [0, new Part([new Position({ x: 0, y: 0 }), new Position({ x: -1, y: 0 })], PrimitiveType.Lines)]
+    ];
+    const renderer = new Renderer({ canvas, parts, });
+    renderer.placePart(0, new Position({ x: 0, y: 0 }));
+    renderer.draw();
 }
