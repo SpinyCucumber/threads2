@@ -1,4 +1,4 @@
-import { CubePosition, DefaultedMap, direction, opposite, sum } from "../utility";
+import { Counter, CubePosition, DefaultedMap, direction, opposite, sum } from "../utility";
 import PriorityQueue from "js-priority-queue";
 import * as Immutable from "immutable";
 
@@ -58,12 +58,22 @@ class TileSet {
 
 class AdjacencyRules {
 
-    private compatibleTiles: Map<TileID, Map<DirectionID, TileID[]>> = new DefaultedMap(() => new DefaultedMap(() => []));
+    private compatibleTiles: Map<TileID, Map<DirectionID, TileID[]>>;
+    readonly enablers: Map<TileID, Map<DirectionID, number>>;
 
     constructor(rules: [TileID, TileID, DirectionID][]) {
+        // Compute compatible tiles
+        this.compatibleTiles = new DefaultedMap(() => new DefaultedMap(() => []));
         for (const [from, to, direction] of rules) {
             this.compatibleTiles.get(from).get(direction).push(to);
             this.compatibleTiles.get(to).get(opposite(direction)).push(from);
+        }
+        // Compute enablers from compatible tiles
+        this.enablers = new DefaultedMap(() => new Map());
+        for (const [tile, compatibleTilesByDirection] of this.compatibleTiles) {
+            for (const [direction, compatibleTiles] of compatibleTilesByDirection) {
+                this.enablers.get(tile).set(direction, compatibleTiles.length);
+            }
         }
     }
 
@@ -78,6 +88,7 @@ interface CellOptions {
     weightLogWeightSum: number;
     entropyNoise: number;
     allowedTiles: Set<Tile>;
+    enablers: Map<Tile, Counter<DirectionID>>;
 }
 
 class Cell {
@@ -99,6 +110,7 @@ class Cell {
      * The collapsed value of the cell. If undefined, the cell is uncollapsed.
      */
     tile: Tile = undefined;
+    enablers: Map<Tile, Counter<DirectionID>>;
 
     constructor(options: CellOptions) {
         Object.assign(this, options);
@@ -155,7 +167,18 @@ export class Collapser {
         this.tiles = tiles;
         this.rules = rules;
         const { weightSum, weightLogWeightSum } = tiles;
-        const createCell = () => new Cell({ weightSum, weightLogWeightSum, allowedTiles: new Set(tiles), entropyNoise: noiseFunction() });
+        function createCell() {
+            const enablers = new Map(Array.from(rules.enablers.entries()).map(
+                ([tileID, enablersByDirection]) => ([tiles.get(tileID), new Counter(enablersByDirection)])
+            ));
+            return new Cell({
+                weightSum,
+                weightLogWeightSum,
+                allowedTiles: new Set(tiles),
+                entropyNoise: noiseFunction(),
+                enablers,
+            });
+        }
         // Create new cell for each position
         this.cells = Immutable.Map(Immutable.Seq(positions).map(position => ([position, createCell()])));
         // Queue each cell
