@@ -108,3 +108,5 @@ export function direction(d: number) {
 }
 
 const directions = Array.from(enumerateDirections());
+
+export const numDirections = directions.length;
