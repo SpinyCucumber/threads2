@@ -65,8 +65,12 @@ export class CubeToOrthoTransform {
         this.origin = origin;
     }
 
-    apply(c: CubePosition): Position {
-        return this.origin.add(this.qBasis.scale(c.q)).add(this.rBasis.scale(c.r));
+    transformPosition(p: CubePosition): Position {
+        return this.origin.add(this.qBasis.scale(p.q)).add(this.rBasis.scale(p.r));
+    }
+
+    transformVector(v: CubeVector): Vector {
+        return this.qBasis.scale(v.q).add(this.rBasis.scale(v.r));
     }
 
 }

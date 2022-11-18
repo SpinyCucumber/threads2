@@ -2,7 +2,6 @@ import { Position, Vector } from "./ortho";
 
 export * from "./hex";
 export * from "./ortho";
-export * from "./initShader";
 
 export function sum(list: number[]) {
     return list.reduce((a, b) => a + b, 0);

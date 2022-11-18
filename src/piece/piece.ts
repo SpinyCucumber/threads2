@@ -1,5 +1,6 @@
 import { AdjacencyRules, AdjacencyRulesBuilder, Tile, TileSet } from "../collapser";
-import { numDirections, opposite } from "../utility";
+import { CubePosition, CubeToOrthoTransform, direction, numDirections, opposite, Position } from "../utility";
+import { Part, PrimitiveType } from "../renderer";
 
 export class Piece {
 
@@ -17,6 +18,21 @@ export class Piece {
         return ((this.connections >> (numDirections - direction - 1)) & 1) === 1;
     }
 
+    generateTile(): Tile {
+        return new Tile(this.id, this.weight);
+    }
+
+    generatePart(transform: CubeToOrthoTransform): Part {
+        const vertices: Position[] = [];
+        const center = transform.transformPosition(new CubePosition({ q: 0, r: 0, s: 0 }));
+        for (let d = 0; d < numDirections; d++) {
+            if (this.hasConnection(d)) {
+                vertices.push(center.add(transform.transformVector(direction(d))), center);
+            }
+        }
+        return new Part(vertices, PrimitiveType.Lines);
+    }
+
 }
 
 export class PieceSet {
@@ -28,7 +44,7 @@ export class PieceSet {
     }
 
     generateTileSet(): TileSet {
-        return new TileSet(Array.from(this).map(({ id, weight }) => new Tile(id, weight)));
+        return new TileSet(Array.from(this).map(piece => piece.generateTile()));
     }
 
     generateAdjacencyRules(): AdjacencyRules {
@@ -54,6 +70,10 @@ export class PieceSet {
             }
         }
         return builder.build();
+    }
+
+    generateParts(transform: CubeToOrthoTransform): Map<number, Part> {
+        return new Map(Array.from(this).map(piece => ([piece.id, piece.generatePart(transform)])));
     }
 
     [Symbol.iterator]() {

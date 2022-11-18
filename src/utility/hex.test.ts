@@ -63,7 +63,7 @@ test("should support immutable map", () => {
 
 test("should transform to ortho", () => {
     const transform = new CubeToOrthoTransform();
-    const ortho = transform.apply(new CubePosition({ q: 2, r: -1, s: 1 }));
+    const ortho = transform.transformPosition(new CubePosition({ q: 2, r: -1, s: 1 }));
     expect(ortho.x).toBeCloseTo(2.598);
     expect(ortho.y).toBeCloseTo(-1.5);
 });
