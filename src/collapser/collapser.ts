@@ -1,4 +1,4 @@
-import { CubePosition, DefaultedMap, direction, opposite, sum } from "../utility";
+import { CubePosition, direction, getOrInsert, opposite, sum } from "../utility";
 import PriorityQueue from "js-priority-queue";
 import * as Immutable from "immutable";
 
@@ -59,18 +59,25 @@ export class AdjacencyRules {
 
     constructor(rules: [TileID, TileID, DirectionID][]) {
         // Compute compatible tiles
-        this.compatibleTiles = new DefaultedMap(() => new DefaultedMap(() => []));
+        this.compatibleTiles = new Map<TileID, Map<DirectionID, TileID[]>>();
         for (const [from, to, direction] of rules) {
-            this.compatibleTiles.get(from).get(direction).push(to);
-            this.compatibleTiles.get(to).get(opposite(direction)).push(from);
+            this.insertCompatibleTile(from, to, direction);
+            this.insertCompatibleTile(to, from, opposite(direction));
         }
         // Compute enablers from compatible tiles
-        this.enablers = new DefaultedMap(() => new Map());
+        this.enablers = new Map<TileID, Map<DirectionID, number>>();
         for (const [tile, compatibleTilesByDirection] of this.compatibleTiles) {
             for (const [direction, compatibleTiles] of compatibleTilesByDirection) {
-                this.enablers.get(tile).set(direction, compatibleTiles.length);
+                const enablersByDirection = getOrInsert(this.enablers, tile, () => new Map<DirectionID, number>());
+                enablersByDirection.set(direction, compatibleTiles.length);
             }
         }
+    }
+
+    private insertCompatibleTile(from: TileID, to: TileID, direction: DirectionID) {
+        const tilesByDirection = getOrInsert(this.compatibleTiles, from, () => new Map<DirectionID, TileID[]>);
+        const tiles = getOrInsert(tilesByDirection, direction, () => <DirectionID[]>[]);
+        tiles.push(to);
     }
 
     getCompatibleTiles(id: TileID): IterableIterator<[DirectionID, TileID[]]> {
