@@ -128,12 +128,12 @@ class Cell {
      * Small, random value added to entropy to resolve ties
      */
     private entropyNoise: number
-    readonly allowedTiles: Set<Tile>;
+    private allowedTiles: Set<Tile>;
     /**
      * The collapsed value of the cell. If undefined, the cell is uncollapsed.
      */
-    tile: Tile = undefined;
-    readonly enablers: Map<TileID, EnablerCounter>;
+    private tile: Tile = undefined;
+    private enablers: Map<TileID, EnablerCounter>;
 
     constructor({ entropyNoise, initialWeightSum, initialWeightLogWeightSum, initialAllowedTiles, initialEnablers }: CellOptions) {
         this.entropyNoise = entropyNoise;
@@ -151,18 +151,39 @@ class Cell {
         return this.tile !== undefined;
     }
 
-    chooseTile(): Tile {
-        let r = Math.random() * this.weightSum;
-        for (const tile of this.allowedTiles) {
-            if (r >= tile.weight) r -= tile.weight;
-            else return tile;
-        }
+    getTile(): Tile {
+        if (this.tile === undefined) throw new CollapserError("Cell has not been collapsed.");
+        return this.tile;
+    }
+
+    getWeightSum(): number {
+        return this.weightSum;
+    }
+
+    getAllowedTiles(): Set<Tile> {
+        return this.allowedTiles;
+    }
+
+    getEnablerCounter(tileID: TileID): EnablerCounter {
+        return this.enablers.get(tileID);
     }
 
     removeTile(tile: Tile) {
         this.allowedTiles.delete(tile);
         this.weightSum -= tile.weight;
         this.weightLogWeightSum -= tile.weightLogWeight;
+    }
+
+    /**
+     * Collapses the cell to a specific tile, yielding the removed tiles.
+     * Cells can only be collapsed once. Once collapsed, the collapsed value can be accessed using cell.getTile()
+     */
+    *collapse(tile: Tile): Generator<Tile> {
+        if (this.tile !== undefined) throw new CollapserError("Cell already collapsed.");
+        this.tile = tile;
+        for (const allowedTile of this.allowedTiles) {
+            if (allowedTile !== tile) yield allowedTile;
+        }
     }
 
 }
@@ -172,6 +193,7 @@ export interface CollapserOptions {
     tiles: TileSet,
     rules: AdjacencyRules;
     noiseFunction: () => number;
+    tileSelector?: (allowedTiles: Set<Tile>, weightSum: number) => Tile;
 }
 
 export class Collapser {
@@ -186,14 +208,16 @@ export class Collapser {
      * A list containing tuples of cell position and tile. Used to track what tiles are removed while
      * collapsing a cell so that we can propogate changes.
      */
-    removedTiles: [CubePosition, Tile][] = [];
+    removals: [CubePosition, Tile][] = [];
     tiles: TileSet;
     rules: AdjacencyRules;
+    tileSelector: (allowedTiles: Set<Tile>, weightSum: number) => Tile;
 
-    constructor({ positions, tiles, rules, noiseFunction }: CollapserOptions) {
+    constructor({ positions, tiles, rules, noiseFunction, tileSelector = defaultTileSelector }: CollapserOptions) {
 
         this.tiles = tiles;
         this.rules = rules;
+        this.tileSelector = tileSelector;
 
         const factory = () => new Cell({
             entropyNoise: noiseFunction(),
@@ -218,7 +242,7 @@ export class Collapser {
      */
     run() {
         let position: CubePosition;
-        while ((position = this.chooseCell()) !== undefined) {
+        while ((position = this.selectCell()) !== undefined) {
             this.collapseCellAt(position);
             this.propogate();
         }
@@ -229,7 +253,7 @@ export class Collapser {
      * Returns the position of the cell to be collapsed.
      * The cell with the minimum entropy is chosen.
      */
-    chooseCell(): CubePosition | undefined {
+    selectCell(): CubePosition | undefined {
         while (this.entropyHeap.length > 0) {
             const [position] = this.entropyHeap.dequeue();
             if (!this.cells.get(position).isCollapsed) return position;
@@ -239,19 +263,16 @@ export class Collapser {
 
     collapseCellAt(position: CubePosition) {
         const cell = this.cells.get(position);
-        // Collapse cell
-        cell.tile = cell.chooseTile();
-        // Propogate tile removals
-        const toRemove = new Set(cell.allowedTiles);
-        toRemove.delete(cell.tile);
-        for (const tile of toRemove) {
-            this.removedTiles.push([position, tile]);
+        // Collapse cell and push tile removals
+        const tile = this.tileSelector(cell.getAllowedTiles(), cell.getWeightSum());
+        for (const removed of cell.collapse(tile)) {
+            this.removals.push([position, removed]);
         }
     }
 
     propogate() {
-        while (this.removedTiles.length > 0) {
-            const [position, tile] = this.removedTiles.pop();
+        while (this.removals.length > 0) {
+            const [position, tile] = this.removals.pop();
             // For each direction (with compatible tiles), iterate over tiles that may appear next to removed tile along direction
             for (const [d, compatible] of this.rules.getCompatibleTiles(tile.id)) {
                 // Find neighbor position
@@ -262,18 +283,26 @@ export class Collapser {
                 // For each compatible tile, decrement enabler
                 const o = opposite(d);
                 for (const c of compatible) {
-                    const enablerCounter = neighbor.enablers.get(c);
+                    const enablerCounter = neighbor.getEnablerCounter(c);
                     // If the tile becomes disabled, remove tile
                     if (enablerCounter.decrement(o)) {
                         const tile = this.tiles.get(c);
                         neighbor.removeTile(tile);
                         // Re-queue cell and add removal to stack
                         this.entropyHeap.queue([neighborPosition, neighbor.entropy]);
-                        this.removedTiles.push([neighborPosition, tile]);
+                        this.removals.push([neighborPosition, tile]);
                     }
                 }
             }
         }
     }
 
+}
+
+const defaultTileSelector = (allowedTiles: Set<Tile>, weightSum: number) => {
+    let r = Math.random() * weightSum;
+    for (const tile of allowedTiles) {
+        if (r < tile.weight) return tile;
+        r -= tile.weight;
+    }
 }
