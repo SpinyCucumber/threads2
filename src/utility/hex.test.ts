@@ -1,5 +1,5 @@
 import { test } from "@jest/globals"
-import { CubeVector, CubePosition, enumerateRing, enumerateSpiral, enumerateDirections } from "./hex";
+import { CubeVector, CubePosition, enumerateRing, enumerateSpiral, enumerateDirections, CubeToOrthoTransform } from "./hex";
 import * as Immutable from "immutable";
 
 test("should enumerate directions", () => {
@@ -59,4 +59,11 @@ test("should support immutable map", () => {
     expect(map.get(new CubePosition({ q: 4, r: -2, s: -2 }))).toBe(4);
     expect(map.get(new CubePosition({ q: 1, r: -2, s: 1 }))).toBe(-2);
     expect(map.get(new CubePosition({ q: 0, r: 0, s: 0 }))).toBeUndefined();
+});
+
+test("should transform to ortho", () => {
+    const transform = new CubeToOrthoTransform();
+    const ortho = transform.apply(new CubePosition({ q: 2, r: -1, s: 1 }));
+    expect(ortho.x).toBeCloseTo(2.598);
+    expect(ortho.y).toBeCloseTo(-1.5);
 });
