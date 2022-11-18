@@ -1,4 +1,4 @@
-import { Counter, CubePosition, DefaultedMap, direction, opposite, sum } from "../utility";
+import { CubePosition, DefaultedMap, direction, opposite, sum } from "../utility";
 import PriorityQueue from "js-priority-queue";
 import * as Immutable from "immutable";
 
@@ -104,11 +104,11 @@ class EnablerCounter {
 }
 
 interface CellOptions {
-    weightSum: number;
-    weightLogWeightSum: number;
     entropyNoise: number;
-    allowedTiles: Set<Tile>;
-    enablers: Map<TileID, EnablerCounter>;
+    initialWeightSum: number;
+    initialWeightLogWeightSum: number;
+    initialAllowedTiles: Iterable<Tile>;
+    initialEnablers: Iterable<[TileID, Iterable<[DirectionID, number]>]>;
 }
 
 class Cell {
@@ -116,24 +116,28 @@ class Cell {
     /**
      * Sum of weights of allowed tiles
      * */
-    weightSum: number
+    private weightSum: number
     /**
      * Sum of weight * log2(weight) of allowed tiles
      */
-    weightLogWeightSum: number
+    private weightLogWeightSum: number
     /**
      * Small, random value added to entropy to resolve ties
      */
-    entropyNoise: number
-    allowedTiles: Set<Tile>;
+    private entropyNoise: number
+    readonly allowedTiles: Set<Tile>;
     /**
      * The collapsed value of the cell. If undefined, the cell is uncollapsed.
      */
     tile: Tile = undefined;
-    enablers: Map<TileID, EnablerCounter>;
+    readonly enablers: Map<TileID, EnablerCounter>;
 
-    constructor(options: CellOptions) {
-        Object.assign(this, options);
+    constructor({ entropyNoise, initialWeightSum, initialWeightLogWeightSum, initialAllowedTiles, initialEnablers }: CellOptions) {
+        this.entropyNoise = entropyNoise;
+        this.weightSum = initialWeightSum;
+        this.weightLogWeightSum = initialWeightLogWeightSum;
+        this.allowedTiles = new Set(initialAllowedTiles);
+        this.enablers = new Map(Array.from(initialEnablers).map(([tileID, counts]) => ([tileID, new EnablerCounter(counts)])));
     }
 
     get entropy(): number {
@@ -174,7 +178,7 @@ export class Collapser {
      * A priority queue containing tuples of cell positions and entropy, sorted by minimum entropy.
      * Used to quickly find the cell with minimum entropy to speed up collapsing
      */
-    entropyHeap = new PriorityQueue<[CubePosition, number]>({ comparator: ([, a], [, b]) => a - b});
+    entropyHeap = new PriorityQueue<[CubePosition, number]>({ comparator: ([, a], [, b]) => a - b });
     /**
      * A list containing tuples of cell position and tile. Used to track what tiles are removed while
      * collapsing a cell so that we can propogate changes.
@@ -188,22 +192,16 @@ export class Collapser {
         this.tiles = tiles;
         this.rules = rules;
 
-        const { weightSum, weightLogWeightSum } = tiles;
-        function createCell() {
-            const enablers = new Map(Array.from(rules.enablers.entries()).map(
-                ([tileID, enablersByDirection]) => ([tileID, new EnablerCounter(enablersByDirection)])
-            ));
-            return new Cell({
-                weightSum,
-                weightLogWeightSum,
-                allowedTiles: new Set(tiles),
-                entropyNoise: noiseFunction(),
-                enablers,
-            });
-        }
+        const factory = () => new Cell({
+            entropyNoise: noiseFunction(),
+            initialWeightSum: tiles.weightSum,
+            initialWeightLogWeightSum: tiles.weightLogWeightSum,
+            initialAllowedTiles: tiles,
+            initialEnablers: rules.enablers,
+        });
 
         // Create new cell for each position
-        this.cells = Immutable.Map(Immutable.Seq(positions).map(position => ([position, createCell()])));
+        this.cells = Immutable.Map(Immutable.Seq(positions).map(position => ([position, factory()])));
         // Queue each cell
         this.cells.forEach((cell, position) => {
             this.entropyHeap.queue([position, cell.entropy]);
