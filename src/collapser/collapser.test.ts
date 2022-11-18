@@ -1,5 +1,5 @@
 import { test, expect } from "@jest/globals";
-import { AdjacencyRules, Tile, TileSet } from "./collapser";
+import { AdjacencyRules, AdjacencyRulesBuilder, Tile, TileSet } from "./collapser";
 
 test("should calculate weightLogWeight", () => {
     const tile = new Tile(0, 10);
@@ -23,12 +23,12 @@ test("should retrieve tile by id", () => {
 });
 
 test("should compute compatible tiles", () => {
-    const rules = new AdjacencyRules([
-        [0, 1, 0],
-        [0, 2, 3],
-        [1, 2, 3],
-        [1, 2, 0],
-    ]);
+    const rules = new AdjacencyRulesBuilder()
+        .withRule(0, 1, 0)
+        .withRule(0, 2, 3)
+        .withRule(1, 2, 3)
+        .withRule(1, 2, 0)
+        .build();
     expect(Array.from(rules.getCompatibleTiles(0))).toEqual([
         [0, [1]],
         [3, [2]],
@@ -44,12 +44,12 @@ test("should compute compatible tiles", () => {
 });
 
 test("should compute enabler counts", () => {
-    const rules = new AdjacencyRules([
-        [0, 1, 0],
-        [0, 2, 3],
-        [1, 2, 3],
-        [1, 2, 0],
-    ]);
+    const rules = new AdjacencyRulesBuilder()
+        .withRule(0, 1, 0)
+        .withRule(0, 2, 3)
+        .withRule(1, 2, 3)
+        .withRule(1, 2, 0)
+        .build();
     expect(rules.enablers.get(0)).toEqual(new Map([[0, 1], [3, 1]]));
     expect(rules.enablers.get(1)).toEqual(new Map([[3, 2], [0, 1]]));
     expect(rules.enablers.get(2)).toEqual(new Map([[0, 2], [3, 1]]));

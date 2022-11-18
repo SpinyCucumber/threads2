@@ -36,10 +36,11 @@ export class TileSet {
      */
     readonly weightLogWeightSum: number;
 
-    constructor(tiles: Tile[]) {
-        this.map = new Map(tiles.map(tile => ([tile.id, tile])));
-        this.weightSum = sum(tiles.map(tile => tile.weight));
-        this.weightLogWeightSum = sum(tiles.map(tile => tile.weightLogWeight));
+    constructor(tiles: Iterable<Tile>) {
+        const tileArray = Array.from(tiles);
+        this.map = new Map(tileArray.map(tile => ([tile.id, tile])));
+        this.weightSum = sum(tileArray.map(tile => tile.weight));
+        this.weightLogWeightSum = sum(tileArray.map(tile => tile.weightLogWeight));
     }
 
     get(id: TileID) {
@@ -52,18 +53,38 @@ export class TileSet {
 
 }
 
+export class AdjacencyRulesBuilder {
+
+    private compatibleTiles = new Map<TileID, Map<DirectionID, TileID[]>>();
+
+    withCompatibleTile(from: TileID, to: TileID, direction: DirectionID): AdjacencyRulesBuilder {
+        const tilesByDirection = getOrInsert(this.compatibleTiles, from, () => new Map<DirectionID, TileID[]>);
+        const tiles = getOrInsert(tilesByDirection, direction, () => <DirectionID[]>[]);
+        tiles.push(to);
+        return this;
+    }
+
+    withRule(from: TileID, to: TileID, direction: DirectionID): AdjacencyRulesBuilder {
+        this.withCompatibleTile(from, to, direction);
+        this.withCompatibleTile(to, from, opposite(direction));
+        return this;
+    }
+
+    build(): AdjacencyRules {
+        return new AdjacencyRules(this.compatibleTiles);
+    }
+
+}
+
 export class AdjacencyRules {
 
     private compatibleTiles: Map<TileID, Map<DirectionID, TileID[]>>;
     readonly enablers: Map<TileID, Map<DirectionID, number>>;
 
-    constructor(rules: [TileID, TileID, DirectionID][]) {
-        // Compute compatible tiles
-        this.compatibleTiles = new Map<TileID, Map<DirectionID, TileID[]>>();
-        for (const [from, to, direction] of rules) {
-            this.insertCompatibleTile(from, to, direction);
-            this.insertCompatibleTile(to, from, opposite(direction));
-        }
+    constructor(compatibleTiles: Iterable<[TileID, Iterable<[DirectionID, TileID[]]>]>) {
+        this.compatibleTiles = new Map(Array.from(compatibleTiles).map(
+            ([tile, tilesByDirection]) => ([tile, new Map(tilesByDirection)])
+        ));
         // Compute enablers from compatible tiles
         this.enablers = new Map<TileID, Map<DirectionID, number>>();
         for (const [tile, compatibleTilesByDirection] of this.compatibleTiles) {
@@ -72,12 +93,6 @@ export class AdjacencyRules {
                 enablersByDirection.set(direction, compatibleTiles.length);
             }
         }
-    }
-
-    private insertCompatibleTile(from: TileID, to: TileID, direction: DirectionID) {
-        const tilesByDirection = getOrInsert(this.compatibleTiles, from, () => new Map<DirectionID, TileID[]>);
-        const tiles = getOrInsert(tilesByDirection, direction, () => <DirectionID[]>[]);
-        tiles.push(to);
     }
 
     getCompatibleTiles(id: TileID): IterableIterator<[DirectionID, TileID[]]> {

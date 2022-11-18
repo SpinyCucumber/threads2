@@ -1,1 +1,1 @@
-export { Tile, Collapser, CollapserOptions } from "./collapser";
+export * from "./collapser";
