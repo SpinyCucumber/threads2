@@ -83,12 +83,32 @@ class AdjacencyRules {
 
 }
 
+class EnablerCounter {
+
+    counts: Map<DirectionID, number>;
+    private disabled = false;
+
+    constructor(counts: Iterable<[DirectionID, number]> = []) {
+        this.counts = new Map(counts);
+    }
+
+    decrement(d: DirectionID): boolean {
+        const value = this.counts.get(d) - 1;
+        if (value === 0 && !this.disabled) {
+            this.disabled = true;
+            return true;
+        }
+        return false;
+    }
+
+}
+
 interface CellOptions {
     weightSum: number;
     weightLogWeightSum: number;
     entropyNoise: number;
     allowedTiles: Set<Tile>;
-    enablers: Map<Tile, Counter<DirectionID>>;
+    enablers: Map<TileID, EnablerCounter>;
 }
 
 class Cell {
@@ -110,7 +130,7 @@ class Cell {
      * The collapsed value of the cell. If undefined, the cell is uncollapsed.
      */
     tile: Tile = undefined;
-    enablers: Map<Tile, Counter<DirectionID>>;
+    enablers: Map<TileID, EnablerCounter>;
 
     constructor(options: CellOptions) {
         Object.assign(this, options);
@@ -164,12 +184,14 @@ export class Collapser {
     rules: AdjacencyRules;
 
     constructor({ positions, tiles, rules, noiseFunction }: CollapserOptions) {
+
         this.tiles = tiles;
         this.rules = rules;
+
         const { weightSum, weightLogWeightSum } = tiles;
         function createCell() {
             const enablers = new Map(Array.from(rules.enablers.entries()).map(
-                ([tileID, enablersByDirection]) => ([tiles.get(tileID), new Counter(enablersByDirection)])
+                ([tileID, enablersByDirection]) => ([tileID, new EnablerCounter(enablersByDirection)])
             ));
             return new Cell({
                 weightSum,
@@ -179,12 +201,14 @@ export class Collapser {
                 enablers,
             });
         }
+
         // Create new cell for each position
         this.cells = Immutable.Map(Immutable.Seq(positions).map(position => ([position, createCell()])));
         // Queue each cell
         this.cells.forEach((cell, position) => {
             this.entropyHeap.queue([position, cell.entropy]);
         });
+
     }
 
     /**
@@ -231,11 +255,21 @@ export class Collapser {
             for (const [d, compatible] of this.rules.getCompatibleTiles(tile.id)) {
                 // Find neighbor position
                 // Skip if neighbor does not exist at position or neighbor is collapsed
-                const neighbor = this.cells.get(position.add(direction(d)));
+                const neighborPosition = position.add(direction(d));
+                const neighbor = this.cells.get(neighborPosition);
                 if (neighbor === undefined || neighbor.isCollapsed) continue;
                 // For each compatible tile, decrement enabler
+                const o = opposite(d);
                 for (const c of compatible) {
-                    // TODO
+                    const enablerCounter = neighbor.enablers.get(c);
+                    // If the tile becomes disabled, remove tile
+                    if (enablerCounter.decrement(o)) {
+                        const tile = this.tiles.get(c);
+                        neighbor.removeTile(tile);
+                        // Re-queue cell and add removal to stack
+                        this.entropyHeap.queue([neighborPosition, neighbor.entropy]);
+                        this.removedTiles.push([neighborPosition, tile]);
+                    }
                 }
             }
         }
