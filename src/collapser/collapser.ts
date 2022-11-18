@@ -204,7 +204,7 @@ class Cell {
 }
 
 export interface CollapserOptions {
-    positions: Iterable<CubePosition>;
+    space: Iterable<CubePosition>;
     tiles: TileSet,
     rules: AdjacencyRules;
     noiseFunction: () => number;
@@ -228,7 +228,7 @@ export class Collapser {
     rules: AdjacencyRules;
     tileSelector: (allowedTiles: Set<Tile>, weightSum: number) => Tile;
 
-    constructor({ positions, tiles, rules, noiseFunction, tileSelector = defaultTileSelector }: CollapserOptions) {
+    constructor({ space, tiles, rules, noiseFunction, tileSelector = defaultTileSelector }: CollapserOptions) {
 
         this.tiles = tiles;
         this.rules = rules;
@@ -243,7 +243,7 @@ export class Collapser {
         });
 
         // Create new cell for each position
-        this.cells = Immutable.Map(Immutable.Seq(positions).map(position => ([position, factory()])));
+        this.cells = Immutable.Map(Immutable.Seq(space).map(position => ([position, factory()])));
         // Queue each cell
         this.cells.forEach((cell, position) => {
             this.entropyHeap.queue([position, cell.entropy]);
@@ -255,12 +255,13 @@ export class Collapser {
      * Runs the wave function collapse algorithm,
      * iteratively collapsing cells until all cells have been collapsed
      */
-    run() {
+    run(): Immutable.Map<CubePosition, Tile> {
         let position: CubePosition;
         while ((position = this.selectCell()) !== undefined) {
             this.collapseCellAt(position);
             this.propogate();
         }
+        return this.cells.map(cell => cell.getTile());
     }
 
     /**

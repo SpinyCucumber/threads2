@@ -1,5 +1,5 @@
-import { AdjacencyRules, AdjacencyRulesBuilder, Tile, TileSet } from "./collapser";
-import { numDirections, opposite } from "./utility";
+import { AdjacencyRules, AdjacencyRulesBuilder, Tile, TileSet } from "../collapser";
+import { numDirections, opposite } from "../utility";
 
 export class Piece {
 
