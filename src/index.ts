@@ -1,8 +1,8 @@
 import { Piece, PieceSet } from "./piece";
-import { CubePosition, enumerateSpiral, Position } from "./utility";
+import { CubePosition, CubeToOrthoTransform, enumerateSpiral, Position, Vector } from "./utility";
 import { Collapser } from "./collapser";
+import { Renderer } from "./renderer";
 import "./style.scss";
-import { Part, PrimitiveType, Renderer } from "./renderer";
 
 const pieces = new PieceSet([
     new Piece(0, 0b100100, 1),
@@ -12,7 +12,14 @@ const pieces = new PieceSet([
     new Piece(4, 0b010100, 0.5),
 ]);
 
-const space = enumerateSpiral(new CubePosition({ q: 0, r: 0, s: 0 }), 4);
+const space = enumerateSpiral(new CubePosition({ q: 0, r: 0, s: 0 }), 6);
+
+const transform = new CubeToOrthoTransform(
+    new Vector({ x: 0.06 * Math.sqrt(3), y: 0 }),
+    new Vector({ x: 0.06 * Math.sqrt(3)/2, y: 0.06 * 3/2 }),
+    new Position({ x: 0, y: 0 }),
+);
+const parts = pieces.generateParts(transform);
 
 const collapser = new Collapser({
     space,
@@ -22,16 +29,15 @@ const collapser = new Collapser({
 });
 
 window.onload = () => {
-    // TODO
+    // Run collapser
     const tiles = collapser.run();
     console.log(tiles.toJSON());
-    
-    // Renderer test!
+    // Place parts and render
     const canvas: HTMLCanvasElement = document.querySelector("#canvas");
-    const parts: [number, Part][] = [
-        [0, new Part([new Position({ x: 0, y: 0 }), new Position({ x: -1, y: 0 })], PrimitiveType.Lines)]
-    ];
     const renderer = new Renderer({ canvas, parts, });
-    renderer.placePart(0, new Position({ x: 0, y: 0 }));
+    for (const [cubePosition, tile] of tiles) {
+        const position = transform.transformPosition(cubePosition);
+        renderer.placePart(tile.id, position);
+    }
     renderer.draw();
 }
