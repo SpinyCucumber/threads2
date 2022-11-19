@@ -27,6 +27,10 @@ module.exports = {
                     "sass-loader",
                 ],
             },
+            {
+                test: /\.glsl$/,
+                use: 'webpack-glsl-loader'
+            }
         ],
     },
     resolve: {
