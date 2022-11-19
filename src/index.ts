@@ -31,20 +31,16 @@ const transform = new CubeToOrthoTransform(
 );
 const parts = pieces.generateParts(transform);
 
-const rules = pieces.generateAdjacencyRules();
-console.info(rules);
-
 const collapser = new Collapser({
     space,
     tiles: pieces.generateTileSet(),
-    rules,
+    rules: pieces.generateAdjacencyRules(),
     noiseFunction: () => 0.01 * Math.random()
 });
 
 window.onload = () => {
     // Run collapser
     const tiles = collapser.run();
-    console.log(tiles.toJSON());
     // Place parts and render
     const canvas: HTMLCanvasElement = document.querySelector("#canvas");
     const renderer = new Renderer({ canvas, parts, });
