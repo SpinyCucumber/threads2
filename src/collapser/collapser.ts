@@ -22,6 +22,10 @@ export class Tile {
         this.weightLogWeight = this.weight * Math.log2(this.weight);
     }
 
+    toString(): string {
+        return `[Tile ${this.id}]`;
+    }
+
 }
 
 export class TileSet {
@@ -112,6 +116,7 @@ export class EnablerCounter {
 
     decrement(d: DirectionID): boolean {
         const value = this.counts.get(d) - 1;
+        this.counts.set(d, value);
         if (value === 0 && !this.disabled) {
             this.disabled = true;
             return true;

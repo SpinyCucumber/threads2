@@ -27,7 +27,7 @@ export class Piece {
         const center = transform.transformPosition(new CubePosition({ q: 0, r: 0, s: 0 }));
         for (let d = 0; d < numDirections; d++) {
             if (this.hasConnection(d)) {
-                vertices.push(center.add(transform.transformVector(direction(d))), center);
+                vertices.push(center.add(transform.transformVector(direction(d)).scale(0.5)), center);
             }
         }
         return new Part(vertices, PrimitiveType.Lines);
