@@ -29,3 +29,12 @@ export class Vector extends Immutable.Record({ x: 0, y: 0 }) {
     }
 
 }
+
+export function flatten(vertices: (Position | Vector)[]): Float32Array {
+    const array = new Float32Array(2 * vertices.length);
+    for (let i = 0; i < vertices.length; i++) {
+        array[2*i] = vertices[i].x;
+        array[2*i + 1] = vertices[i].y;
+    }
+    return array;
+}
