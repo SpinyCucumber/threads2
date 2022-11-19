@@ -1,30 +1,7 @@
-import { flatten, Position } from "../utility";
+import { createProgram, createShader, flatten, Position } from "../utility";
 
-const fragmentShaderSource = `
-    #version 300 es
-    precision mediump float;
-
-    out vec4 fColor;
-
-    void
-    main()
-    {
-        fColor = vec4(1.0, 1.0, 1.0, 1.0);
-    }
-`;
-
-const vertexShaderSource = `
-    #version 300 es
-        
-    uniform vec2 uTranslate;
-    in vec4 aPosition;
-
-    void
-    main()
-    {
-        gl_Position = aPosition + vec4(uTranslate, 0, 0);
-    }
-`;
+const fragmentSource: string = require("./shaders/fragment.glsl");
+const vertexSource: string = require("./shaders/vertex.glsl");
 
 export interface PrimitiveType {
     getID: (gl: WebGL2RenderingContext) => number
@@ -77,20 +54,6 @@ interface RendererOptions {
     parts: Iterable<[number, Part]>,
 }
 
-function createShader(gl: WebGL2RenderingContext, type: number, source: string): WebGLShader {
-    const shader = gl.createShader(type);
-    gl.shaderSource(shader, source.replace(/^\s+|\s+$/g, ''));
-    gl.compileShader(shader);
-    return shader;
-}
-
-function createProgram(gl: WebGL2RenderingContext, ...shaders: WebGLShader[]): WebGLProgram {
-    const program = gl.createProgram();
-    for (const shader of shaders) gl.attachShader(program, shader);
-    gl.linkProgram(program);
-    return program;
-}
-
 export class Renderer {
 
     private gl: WebGL2RenderingContext;
@@ -106,8 +69,8 @@ export class Renderer {
         // Bake parts
         this.bakedParts = new Map(Array.from(parts).map(([id, part]) => ([id, part.bake(this.gl)])));
         // Construct shaders
-        const vertexShader = createShader(this.gl, this.gl.VERTEX_SHADER, vertexShaderSource);
-        const fragmentShader = createShader(this.gl, this.gl.FRAGMENT_SHADER, fragmentShaderSource);
+        const vertexShader = createShader(this.gl, this.gl.VERTEX_SHADER, vertexSource);
+        const fragmentShader = createShader(this.gl, this.gl.FRAGMENT_SHADER, fragmentSource);
         // Construct WebGL program
         const program = createProgram(this.gl, vertexShader, fragmentShader);
         // Retrieve variable locations
