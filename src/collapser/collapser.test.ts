@@ -1,5 +1,6 @@
 import { test, expect } from "@jest/globals";
-import { AdjacencyRulesBuilder, Tile, TileSet } from "./collapser";
+import { AdjacencyRulesBuilder } from "./collapser";
+import { Tile, TileSet } from "./tile";
 
 test("should calculate weightLogWeight", () => {
     const tile = new Tile(0, 10);

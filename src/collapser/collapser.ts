@@ -1,74 +1,22 @@
-import { CubePosition, direction, getOrInsert, opposite, sum } from "../utility";
+import { CubePosition, direction, getOrInsert, opposite } from "../utility";
+import { Tile, TileSet } from "./tile";
 import PriorityQueue from "js-priority-queue";
 import * as Immutable from "immutable";
 
 export class CollapserError extends Error { }
 
-type TileID = number;
-type DirectionID = number;
-
-export class Tile {
-
-    id: TileID;
-    /**
-     * The relative frequency of the tile. Determines how often the tile appears in the output
-     */
-    weight: number;
-    weightLogWeight: number;
-
-    constructor(id: TileID, weight: number) {
-        this.id = id;
-        this.weight = weight;
-        this.weightLogWeight = this.weight * Math.log2(this.weight);
-    }
-
-    toString(): string {
-        return `[Tile ${this.id}]`;
-    }
-
-}
-
-export class TileSet {
-
-    private map: Map<TileID, Tile>;
-    /**
-     * The sum of all tile weights, used for calculting cell entropy
-     */
-    readonly weightSum: number;
-    /**
-     * The sum of the quantity weight * log2(weight) of all tiles. Also used to calculate entropy
-     */
-    readonly weightLogWeightSum: number;
-
-    constructor(tiles: Iterable<Tile>) {
-        const tileArray = Array.from(tiles);
-        this.map = new Map(tileArray.map(tile => ([tile.id, tile])));
-        this.weightSum = sum(tileArray.map(tile => tile.weight));
-        this.weightLogWeightSum = sum(tileArray.map(tile => tile.weightLogWeight));
-    }
-
-    get(id: TileID) {
-        return this.map.get(id);
-    }
-
-    [Symbol.iterator]() {
-        return this.map.values();
-    }
-
-}
-
 export class AdjacencyRulesBuilder {
 
-    private compatibleTiles = new Map<TileID, Map<DirectionID, TileID[]>>();
+    private compatibleTiles = new Map<number, Map<number, number[]>>();
 
-    withCompatibleTile(from: TileID, to: TileID, direction: DirectionID): AdjacencyRulesBuilder {
-        const tilesByDirection = getOrInsert(this.compatibleTiles, from, () => new Map<DirectionID, TileID[]>);
-        const tiles = getOrInsert(tilesByDirection, direction, () => <DirectionID[]>[]);
+    withCompatibleTile(from: number, to: number, direction: number): AdjacencyRulesBuilder {
+        const tilesByDirection = getOrInsert(this.compatibleTiles, from, () => new Map<number, number[]>);
+        const tiles = getOrInsert(tilesByDirection, direction, () => <number[]>[]);
         tiles.push(to);
         return this;
     }
 
-    withRule(from: TileID, to: TileID, direction: DirectionID): AdjacencyRulesBuilder {
+    withRule(from: number, to: number, direction: number): AdjacencyRulesBuilder {
         this.withCompatibleTile(from, to, direction);
         this.withCompatibleTile(to, from, opposite(direction));
         return this;
@@ -82,24 +30,24 @@ export class AdjacencyRulesBuilder {
 
 export class AdjacencyRules {
 
-    private compatibleTiles: Map<TileID, Map<DirectionID, TileID[]>>;
-    readonly enablers: Map<TileID, Map<DirectionID, number>>;
+    private compatibleTiles: Map<number, Map<number, number[]>>;
+    readonly enablers: Map<number, Map<number, number>>;
 
-    constructor(compatibleTiles: Iterable<[TileID, Iterable<[DirectionID, TileID[]]>]>) {
+    constructor(compatibleTiles: Iterable<[number, Iterable<[number, number[]]>]>) {
         this.compatibleTiles = new Map(Array.from(compatibleTiles).map(
             ([tile, tilesByDirection]) => ([tile, new Map(tilesByDirection)])
         ));
         // Compute enablers from compatible tiles
-        this.enablers = new Map<TileID, Map<DirectionID, number>>();
+        this.enablers = new Map<number, Map<number, number>>();
         for (const [tile, compatibleTilesByDirection] of this.compatibleTiles) {
             for (const [direction, compatibleTiles] of compatibleTilesByDirection) {
-                const enablersByDirection = getOrInsert(this.enablers, tile, () => new Map<DirectionID, number>());
+                const enablersByDirection = getOrInsert(this.enablers, tile, () => new Map<number, number>());
                 enablersByDirection.set(direction, compatibleTiles.length);
             }
         }
     }
 
-    getCompatibleTiles(id: TileID): IterableIterator<[DirectionID, TileID[]]> {
+    getCompatibleTiles(id: number): IterableIterator<[number, number[]]> {
         return this.compatibleTiles.get(id).entries();
     }
 
@@ -107,14 +55,14 @@ export class AdjacencyRules {
 
 export class EnablerCounter {
 
-    counts: Map<DirectionID, number>;
+    counts: Map<number, number>;
     private disabled = false;
 
-    constructor(counts: Iterable<[DirectionID, number]> = []) {
+    constructor(counts: Iterable<[number, number]> = []) {
         this.counts = new Map(counts);
     }
 
-    decrement(d: DirectionID): boolean {
+    decrement(d: number): boolean {
         const value = this.counts.get(d) - 1;
         this.counts.set(d, value);
         if (value === 0 && !this.disabled) {
@@ -131,7 +79,7 @@ interface CellOptions {
     initialWeightSum: number;
     initialWeightLogWeightSum: number;
     initialAllowedTiles: Iterable<Tile>;
-    initialEnablers: Iterable<[TileID, Iterable<[DirectionID, number]>]>;
+    initialEnablers: Iterable<[number, Iterable<[number, number]>]>;
 }
 
 class Cell {
@@ -153,7 +101,7 @@ class Cell {
      * The collapsed value of the cell. If undefined, the cell is uncollapsed.
      */
     private tile: Tile = undefined;
-    private enablers: Map<TileID, EnablerCounter>;
+    private enablers: Map<number, EnablerCounter>;
 
     constructor({ entropyNoise, initialWeightSum, initialWeightLogWeightSum, initialAllowedTiles, initialEnablers }: CellOptions) {
         this.entropyNoise = entropyNoise;
@@ -184,7 +132,7 @@ class Cell {
         return this.allowedTiles;
     }
 
-    getEnablerCounter(tileID: TileID): EnablerCounter {
+    getEnablerCounter(tileID: number): EnablerCounter {
         return this.enablers.get(tileID);
     }
 
