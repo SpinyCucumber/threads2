@@ -6,9 +6,12 @@ export class Counter<T> {
         this.map = new Map(counts);
     }
 
-    decrease(key: T) {
+    decrease(key: T): number {
         if (!this.map.has(key)) throw new Error(`No count for key "${key}"`);
-        this.map.set(key, this.map.get(key) - 1);
+        const decreased = this.map.get(key) - 1;
+        this.map.set(key, decreased);
+        return decreased;
+        
     }
 
     get(key: T): number | undefined {

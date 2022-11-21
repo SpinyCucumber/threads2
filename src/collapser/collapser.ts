@@ -1,4 +1,4 @@
-import { CubePosition, direction, opposite } from "../utility";
+import { Counter, CubePosition, direction, opposite } from "../utility";
 import { Tile, TileSet } from "./tile";
 import { AdjacencyRules } from "./adjacency";
 import PriorityQueue from "js-priority-queue";
@@ -7,34 +7,6 @@ import * as Immutable from "immutable";
 export class CollapserError extends Error { }
 
 export type Constraint = (space: Immutable.Set<CubePosition>) => Iterable<[CubePosition, number[]]>;
-
-export class EnablerCounter {
-
-    counts: Map<number, number>;
-    private disabled = false;
-
-    constructor(counts: Iterable<[number, number]> = []) {
-        this.counts = new Map(counts);
-    }
-
-    isDisabled(): boolean {
-        return this.disabled;
-    }
-
-    /**
-     * Decreases the number of enablers along direction d.
-     * If tile has already been disabled, this method produces an error.
-     * Returns whether the tile is disabled, after the decrease operation
-     */
-    decrease(d: number): boolean {
-        if (this.disabled) throw new CollapserError("Attempt to decrease enablers of disabled tile.");
-        const decreased = this.counts.get(d) - 1;
-        this.counts.set(d, decreased);
-        if (decreased === 0) this.disabled = true;
-        return this.disabled;
-    }
-
-}
 
 interface CellOptions {
     entropyNoise: number;
@@ -63,14 +35,14 @@ class Cell {
      * The collapsed value of the cell. If undefined, the cell is uncollapsed.
      */
     private tile: Tile = undefined;
-    private enablers: Map<number, EnablerCounter>;
+    private enablers: Map<number, Counter<number>>;
 
     constructor({ entropyNoise, initialWeightSum, initialWeightLogWeightSum, initialAllowedTiles, initialEnablers }: CellOptions) {
         this.entropyNoise = entropyNoise;
         this.weightSum = initialWeightSum;
         this.weightLogWeightSum = initialWeightLogWeightSum;
         this.allowedTiles = new Set(initialAllowedTiles);
-        this.enablers = new Map(Array.from(initialEnablers).map(([tileID, counts]) => ([tileID, new EnablerCounter(counts)])));
+        this.enablers = new Map(Array.from(initialEnablers).map(([tileID, counts]) => ([tileID, new Counter(counts)])));
     }
 
     get entropy(): number {
@@ -94,7 +66,7 @@ class Cell {
         return this.allowedTiles;
     }
 
-    getEnablerCounter(tileID: number): EnablerCounter {
+    getEnablerCounter(tileID: number): Counter<number> {
         return this.enablers.get(tileID);
     }
 
@@ -189,8 +161,10 @@ export class Collapser {
                     entropyChanged = true;
                 }
                 // If entropy has changed, requeue cell
-                if (entropyChanged) this.entropyHeap.queue([position, cell.entropy]);
-                this.propogate();
+                if (entropyChanged) {
+                    this.entropyHeap.queue([position, cell.entropy]);
+                    this.propogate();
+                }
             }
         }
     }
@@ -225,7 +199,9 @@ export class Collapser {
 
     collapseCellAt(position: CubePosition) {
         const cell = this.cells.get(position);
+        // If cell has no possible tiles (all tiles have been disallowed) produce error
         // Collapse cell and push tile removals
+        if (cell.getAllowedTiles().size === 0) throw new CollapserError(`Cell at ${position} has no possible tiles!`);
         const tile = this.selectTile(cell.getAllowedTiles(), cell.getWeightSum());
         for (const removed of cell.collapse(tile)) {
             this.disallowStack.push([position, removed]);
@@ -246,11 +222,12 @@ export class Collapser {
                 const o = opposite(d);
                 for (const c of compatible) {
                     // Skip compatible tile if already disabled
+                    const tile = this.tiles.get(c);
+                    if (!neighbor.isTileAllowed(tile)) continue;
                     const enablerCounter = neighbor.getEnablerCounter(c);
-                    if (enablerCounter.isDisabled()) continue;
-                    // If the tile becomes disabled, disallow tile
-                    if (enablerCounter.decrease(o)) {
-                        const tile = this.tiles.get(c);
+                    // Decrease number of enablers along direction
+                    // If there are no enablers remaining, disallow tile
+                    if (enablerCounter.decrease(o) === 0) {
                         neighbor.disallowTile(tile);
                         // Re-queue cell and add disallowed tile to stack
                         this.entropyHeap.queue([neighborPosition, neighbor.entropy]);
