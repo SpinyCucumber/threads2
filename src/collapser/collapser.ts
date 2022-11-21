@@ -114,7 +114,7 @@ export interface CollapserOptions {
     tiles: TileSet,
     rules: AdjacencyRules;
     noiseFunction: () => number;
-    tileSelector?: (allowedTiles: Set<Tile>, weightSum: number) => Tile;
+    heat?: number;
 }
 
 export class Collapser {
@@ -132,13 +132,13 @@ export class Collapser {
     removals: [CubePosition, Tile][] = [];
     tiles: TileSet;
     rules: AdjacencyRules;
-    tileSelector: (allowedTiles: Set<Tile>, weightSum: number) => Tile;
+    heat: number; // TODO Implement
 
-    constructor({ space, tiles, rules, noiseFunction, tileSelector = defaultTileSelector }: CollapserOptions) {
+    constructor({ space, tiles, rules, heat = 1.0, noiseFunction }: CollapserOptions) {
 
         this.tiles = tiles;
         this.rules = rules;
-        this.tileSelector = tileSelector;
+        this.heat = heat;
 
         const factory = () => new Cell({
             entropyNoise: noiseFunction(),
@@ -186,7 +186,7 @@ export class Collapser {
     collapseCellAt(position: CubePosition) {
         const cell = this.cells.get(position);
         // Collapse cell and push tile removals
-        const tile = this.tileSelector(cell.getAllowedTiles(), cell.getWeightSum());
+        const tile = this.selectTile(cell.getAllowedTiles(), cell.getWeightSum());
         for (const removed of cell.collapse(tile)) {
             this.removals.push([position, removed]);
         }
@@ -219,12 +219,12 @@ export class Collapser {
         }
     }
 
-}
-
-const defaultTileSelector = (allowedTiles: Set<Tile>, weightSum: number) => {
-    let r = Math.random() * weightSum;
-    for (const tile of allowedTiles) {
-        if (r < tile.weight) return tile;
-        r -= tile.weight;
+    private selectTile(allowedTiles: Set<Tile>, weightSum: number): Tile {
+        let r = Math.random() * weightSum;
+        for (const tile of allowedTiles) {
+            if (r < tile.weight) return tile;
+            r -= tile.weight;
+        }
     }
+
 }
