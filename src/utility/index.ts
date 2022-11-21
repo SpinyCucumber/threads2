@@ -1,6 +1,7 @@
 export * from "./hex";
 export * from "./ortho";
 export * from "./shader";
+export * from "./counter";
 
 export function sum(list: number[]) {
     return list.reduce((a, b) => a + b, 0);
