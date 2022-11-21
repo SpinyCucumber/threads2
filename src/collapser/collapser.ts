@@ -6,6 +6,10 @@ import * as Immutable from "immutable";
 
 export class CollapserError extends Error { }
 
+export interface Constraint {
+    getDisallowedTiles(space: Immutable.Set<CubePosition>): Map<CubePosition, number[]>
+}
+
 export class EnablerCounter {
 
     counts: Map<number, number>;
@@ -96,6 +100,10 @@ class Cell {
         return this.enablers.get(tileID);
     }
 
+    isTileAllowed(tile: Tile) {
+        return this.allowedTiles.has(tile);
+    }
+
     disallowTile(tile: Tile) {
         this.allowedTiles.delete(tile);
         this.weightSum -= tile.weight;
@@ -120,13 +128,15 @@ export interface CollapserOptions {
     space: Iterable<CubePosition>;
     tiles: TileSet,
     rules: AdjacencyRules;
-    noiseFunction: () => number;
     heat?: number;
+    constraints?: Iterable<Constraint>;
+    noiseFunction: () => number;
 }
 
 export class Collapser {
 
     cells: Immutable.Map<CubePosition, Cell>;
+    constraints = <Constraint[]>[];
     /**
      * A priority queue containing tuples of cell positions and entropy, sorted by minimum entropy.
      * Used to quickly find the cell with minimum entropy to speed up collapsing
@@ -139,24 +149,25 @@ export class Collapser {
     disallowStack: [CubePosition, Tile][] = [];
     tiles: TileSet;
     rules: AdjacencyRules;
-    heat: number; // TODO Implement
+    heat = 1.0; // TODO Implement
 
-    constructor({ space, tiles, rules, heat = 1.0, noiseFunction }: CollapserOptions) {
+    constructor(options: CollapserOptions) {
 
-        this.tiles = tiles;
-        this.rules = rules;
-        this.heat = heat;
+        this.tiles = options.tiles;
+        this.rules = options.rules;
+        if (options.constraints) this.constraints = Array.from(options.constraints);
+        if (options.heat) this.heat = options.heat;
 
         const factory = () => new Cell({
-            entropyNoise: noiseFunction(),
-            initialWeightSum: tiles.weightSum,
-            initialWeightLogWeightSum: tiles.weightLogWeightSum,
-            initialAllowedTiles: tiles,
-            initialEnablers: rules.enablerCounts,
+            entropyNoise: options.noiseFunction(),
+            initialWeightSum: this.tiles.weightSum,
+            initialWeightLogWeightSum: this.tiles.weightLogWeightSum,
+            initialAllowedTiles: this.tiles,
+            initialEnablers: this.rules.enablerCounts,
         });
 
         // Create new cell for each position
-        this.cells = Immutable.Map(Immutable.Seq(space).map(position => ([position, factory()])));
+        this.cells = Immutable.Map(Immutable.Seq(options.space).map(position => ([position, factory()])));
         // Queue each cell
         this.cells.forEach((cell, position) => {
             this.entropyHeap.queue([position, cell.entropy]);
@@ -164,11 +175,30 @@ export class Collapser {
 
     }
 
+    private applyConstraints() {
+        const space = Immutable.Set(this.cells.keys());
+        for (const constraint of this.constraints) {
+            const disallowedTiles = constraint.getDisallowedTiles(space);
+            for (const [position, toDisallow] of disallowedTiles) {
+                if (!this.cells.has(position)) throw new CollapserError(`Cell at ${position} does not exist.`);
+                const cell = this.cells.get(position);
+                for (const tileID of toDisallow) {
+                    const tile = this.tiles.get(tileID);
+                    cell.disallowTile(tile);
+                    this.disallowStack.push([position, tile]);
+                }
+                this.propogate();
+            }
+        }
+    }
+
     /**
      * Runs the wave function collapse algorithm,
      * iteratively collapsing cells until all cells have been collapsed
      */
     run(): Immutable.Map<CubePosition, Tile> {
+        // First, apply constraints
+        this.applyConstraints();
         let position: CubePosition;
         while ((position = this.selectCell()) !== undefined) {
             this.collapseCellAt(position);
