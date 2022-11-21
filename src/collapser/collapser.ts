@@ -6,9 +6,7 @@ import * as Immutable from "immutable";
 
 export class CollapserError extends Error { }
 
-export interface Constraint {
-    getDisallowedTiles(space: Immutable.Set<CubePosition>): Map<CubePosition, number[]>
-}
+export type Constraint = (space: Immutable.Set<CubePosition>) => Iterable<[CubePosition, number[]]>;
 
 export class EnablerCounter {
 
@@ -178,8 +176,7 @@ export class Collapser {
     private applyConstraints() {
         const space = Immutable.Set(this.cells.keys());
         for (const constraint of this.constraints) {
-            const disallowedTiles = constraint.getDisallowedTiles(space);
-            for (const [position, toDisallow] of disallowedTiles) {
+            for (const [position, toDisallow] of constraint(space)) {
                 if (!this.cells.has(position)) throw new CollapserError(`Cell at ${position} does not exist.`);
                 const cell = this.cells.get(position);
                 let entropyChanged = false;
