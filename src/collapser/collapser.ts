@@ -96,14 +96,14 @@ class Cell {
         return this.enablers.get(tileID);
     }
 
-    removeTile(tile: Tile) {
+    disallowTile(tile: Tile) {
         this.allowedTiles.delete(tile);
         this.weightSum -= tile.weight;
         this.weightLogWeightSum -= tile.weightLogWeight;
     }
 
     /**
-     * Collapses the cell to a specific tile, yielding the removed tiles.
+     * Collapses the cell to a specific tile, yielding the disallowed tiles.
      * Cells can only be collapsed once. Once collapsed, the collapsed value can be accessed using cell.getTile()
      */
     *collapse(tile: Tile): Generator<Tile> {
@@ -133,10 +133,10 @@ export class Collapser {
      */
     entropyHeap = new PriorityQueue<[CubePosition, number]>({ comparator: ([, a], [, b]) => a - b });
     /**
-     * A list containing tuples of cell position and tile. Used to track what tiles are removed while
+     * A list containing tuples of cell position and tile. Used to track what tiles are disallowed while
      * collapsing a cell so that we can propogate changes.
      */
-    removals: [CubePosition, Tile][] = [];
+    disallowStack: [CubePosition, Tile][] = [];
     tiles: TileSet;
     rules: AdjacencyRules;
     heat: number; // TODO Implement
@@ -195,13 +195,13 @@ export class Collapser {
         // Collapse cell and push tile removals
         const tile = this.selectTile(cell.getAllowedTiles(), cell.getWeightSum());
         for (const removed of cell.collapse(tile)) {
-            this.removals.push([position, removed]);
+            this.disallowStack.push([position, removed]);
         }
     }
 
     propogate() {
-        while (this.removals.length > 0) {
-            const [position, tile] = this.removals.pop();
+        while (this.disallowStack.length > 0) {
+            const [position, tile] = this.disallowStack.pop();
             // For each direction (with compatible tiles), iterate over tiles that may appear next to removed tile along direction
             for (const [d, compatible] of this.rules.getCompatibleTiles(tile.id)) {
                 // Find neighbor position
@@ -215,13 +215,13 @@ export class Collapser {
                     // Skip compatible tile if already disabled
                     const enablerCounter = neighbor.getEnablerCounter(c);
                     if (enablerCounter.isDisabled()) continue;
-                    // If the tile becomes disabled, remove tile
+                    // If the tile becomes disabled, disallow tile
                     if (enablerCounter.decrease(o)) {
                         const tile = this.tiles.get(c);
-                        neighbor.removeTile(tile);
-                        // Re-queue cell and add removal to stack
+                        neighbor.disallowTile(tile);
+                        // Re-queue cell and add disallowed tile to stack
                         this.entropyHeap.queue([neighborPosition, neighbor.entropy]);
-                        this.removals.push([neighborPosition, tile]);
+                        this.disallowStack.push([neighborPosition, tile]);
                     }
                 }
             }
