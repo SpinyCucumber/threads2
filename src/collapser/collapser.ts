@@ -182,11 +182,17 @@ export class Collapser {
             for (const [position, toDisallow] of disallowedTiles) {
                 if (!this.cells.has(position)) throw new CollapserError(`Cell at ${position} does not exist.`);
                 const cell = this.cells.get(position);
+                let entropyChanged = false;
                 for (const tileID of toDisallow) {
                     const tile = this.tiles.get(tileID);
+                    // Don't disallow tile if already disallowed
+                    if (!cell.isTileAllowed(tile)) continue;
                     cell.disallowTile(tile);
                     this.disallowStack.push([position, tile]);
+                    entropyChanged = true;
                 }
+                // If entropy has changed, requeue cell
+                if (entropyChanged) this.entropyHeap.queue([position, cell.entropy]);
                 this.propogate();
             }
         }
