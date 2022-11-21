@@ -15,14 +15,21 @@ export class EnablerCounter {
         this.counts = new Map(counts);
     }
 
-    decrement(d: number): boolean {
-        const value = this.counts.get(d) - 1;
-        this.counts.set(d, value);
-        if (value === 0 && !this.disabled) {
-            this.disabled = true;
-            return true;
-        }
-        return false;
+    isDisabled(): boolean {
+        return this.disabled;
+    }
+
+    /**
+     * Decreases the number of enablers along direction d.
+     * If tile has already been disabled, this method produces an error.
+     * Returns whether the tile is disabled, after the decrease operation
+     */
+    decrease(d: number): boolean {
+        if (this.disabled) throw new CollapserError("Attempt to decrease enablers of disabled tile.");
+        const decreased = this.counts.get(d) - 1;
+        this.counts.set(d, decreased);
+        if (decreased === 0) this.disabled = true;
+        return this.disabled;
     }
 
 }
@@ -205,9 +212,11 @@ export class Collapser {
                 // For each compatible tile, decrement enabler
                 const o = opposite(d);
                 for (const c of compatible) {
+                    // Skip compatible tile if already disabled
                     const enablerCounter = neighbor.getEnablerCounter(c);
+                    if (enablerCounter.isDisabled()) continue;
                     // If the tile becomes disabled, remove tile
-                    if (enablerCounter.decrement(o)) {
+                    if (enablerCounter.decrease(o)) {
                         const tile = this.tiles.get(c);
                         neighbor.removeTile(tile);
                         // Re-queue cell and add removal to stack
