@@ -60,7 +60,6 @@ export class Renderer {
     private bakedParts: Map<number, BakedPart>;
     private positionLocation: number;
     private translateLocation: WebGLUniformLocation;
-    private placedParts: [number, Float32Array][] = [];
 
     constructor({ canvas, parts }: RendererOptions) {
         this.gl = canvas.getContext("webgl2");
@@ -80,21 +79,18 @@ export class Renderer {
         this.gl.enableVertexAttribArray(this.positionLocation);
     }
 
-    placePart(partID: number, position: Position) {
-        this.placedParts.push([partID, flatten([position])]);
+    startDraw() {        
+        this.gl.clear(this.gl.COLOR_BUFFER_BIT);
     }
 
-    draw() {
-        this.gl.clear(this.gl.COLOR_BUFFER_BIT);
-        for (const [partID, position] of this.placedParts) {
-            // Set translate vector
-            this.gl.uniform2fv(this.translateLocation, position);
-            // Draw buffer
-            const { buffer, numVertices, mode } = this.bakedParts.get(partID);
-            this.gl.bindBuffer(this.gl.ARRAY_BUFFER, buffer);
-            this.gl.vertexAttribPointer(this.positionLocation, 2, this.gl.FLOAT, false, 0, 0);
-            this.gl.drawArrays(mode, 0, numVertices);
-        }
+    drawPart(partID: number, position: Position) {
+        // Set translate vector
+        this.gl.uniform2fv(this.translateLocation, flatten([position]));
+        // Draw buffer
+        const { buffer, numVertices, mode } = this.bakedParts.get(partID);
+        this.gl.bindBuffer(this.gl.ARRAY_BUFFER, buffer);
+        this.gl.vertexAttribPointer(this.positionLocation, 2, this.gl.FLOAT, false, 0, 0);
+        this.gl.drawArrays(mode, 0, numVertices);
     }
 
 }

@@ -44,8 +44,8 @@ window.onload = () => {
     // Place parts and render
     const canvas: HTMLCanvasElement = document.querySelector("#canvas");
     const renderer = new Renderer({ canvas, parts, });
+    renderer.startDraw();
     for (const [position, tile] of tiles) {
-        renderer.placePart(tile.id, transform.transformPosition(position));
+        renderer.drawPart(tile.id, transform.transformPosition(position));
     }
-    renderer.draw();
 }
