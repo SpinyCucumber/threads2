@@ -6,6 +6,10 @@ import * as Immutable from "immutable";
 
 export class CollapserError extends Error { }
 
+/**
+ * A Constraint is a function that constrains the tiles that may appear in a cell
+ * based on the position of the cell. Constraints are ran before the main collapser loop.
+ */
 export type Constraint = (space: Immutable.Set<CubePosition>) => Iterable<[CubePosition, number[]]>;
 
 interface CellOptions {
@@ -94,6 +98,11 @@ class Cell {
 
 }
 
+export interface CollapserResult {
+    tiles: Immutable.Map<CubePosition, Tile>;
+    history: CubePosition[];
+}
+
 export interface CollapserOptions {
     space: Iterable<CubePosition>;
     tiles: TileSet,
@@ -173,15 +182,22 @@ export class Collapser {
      * Runs the wave function collapse algorithm,
      * iteratively collapsing cells until all cells have been collapsed
      */
-    run(): Immutable.Map<CubePosition, Tile> {
+    run(): CollapserResult {
         // First, apply constraints
         this.applyConstraints();
-        let position: CubePosition;
-        while ((position = this.selectCell()) !== undefined) {
+        // Select cells to collapse (and collapse them) until all cells have been collapsed
+        // We maintain the order of cells we collapse, which might be of interest to users
+        let history = <CubePosition[]>[];
+        while (true) {
+            const position = this.selectCell();
+            if (position === undefined) break;
             this.collapseCellAt(position);
             this.propogate();
+            history.push(position);
         }
-        return this.cells.map(cell => cell.getTile());
+        // Construct result
+        const tiles = this.cells.map(cell => cell.getTile());
+        return { tiles, history };
     }
 
     /**

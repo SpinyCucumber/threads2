@@ -48,7 +48,7 @@ const collapser = new Collapser({
 
 window.onload = () => {
     // Run collapser
-    const tiles = collapser.run();
+    const { tiles } = collapser.run();
     // Place parts and render
     const canvas: HTMLCanvasElement = document.querySelector("#canvas");
     const renderer = new Renderer({ canvas, parts, });
