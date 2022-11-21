@@ -1,5 +1,5 @@
-import { AdjacencyRules, AdjacencyRulesBuilder, Tile, TileSet } from "../collapser";
-import { CubePosition, CubeToOrthoTransform, direction, numDirections, opposite, Position } from "../utility";
+import { AdjacencyRules, AdjacencyRulesBuilder, Constraint, Tile, TileSet } from "../collapser";
+import { CubePosition, CubeToOrthoTransform, direction, getOrInsert, numDirections, opposite, Position } from "../utility";
 import { Part, PrimitiveType } from "../renderer";
 
 export class Piece {
@@ -38,9 +38,18 @@ export class Piece {
 export class PieceSet {
 
     map: Map<number, Piece>;
+    piecesWithConnection = new Map<number, Piece[]>();
+    piecesWithoutConnection = new Map<number, Piece[]>();
 
     constructor(pieces: Iterable<Piece>) {
         this.map = new Map(Array.from(pieces).map(piece => ([piece.id, piece])));
+        // For each direction, we track the pieces that do/do not have a connection along that direction.
+        for (const piece of this) {
+            for (let d = 0; d < numDirections; d++) {
+                const map = (piece.hasConnection(d)) ? this.piecesWithConnection : this.piecesWithoutConnection;
+                getOrInsert(map, d, () => <Piece[]>[]).push(piece);
+            }
+        }
     }
 
     generateTileSet(): TileSet {
@@ -48,25 +57,13 @@ export class PieceSet {
     }
 
     generateAdjacencyRules(): AdjacencyRules {
-        const mapFactory = () => new Map(Array.from(Array(numDirections).keys()).map(
-            i => ([i, <Piece[]>[]])
-        ));
-        // For each direction, we track the pieces that do/do not have a connection along that direction.
-        const piecesWithConnection = mapFactory();
-        const piecesWithoutConnection = mapFactory();
-        for (const piece of this) {
-            for (let d = 0; d < numDirections; d++) {
-                if (piece.hasConnection(d)) piecesWithConnection.get(d).push(piece);
-                else piecesWithoutConnection.get(d).push(piece);
-            }
-        }
         // Construct adjacency rules for each tile
         const builder = new AdjacencyRulesBuilder();
         for (const piece of this) {
             for (let d = 0; d < numDirections; d++) {
                 const o = opposite(d);
-                const compatiblePieces = piece.hasConnection(d) ? piecesWithConnection.get(o) : piecesWithoutConnection.get(o);
-                for (const compatible of compatiblePieces) builder.withCompatibleTile(piece.id, compatible.id, d);
+                const map = (piece.hasConnection(d)) ? this.piecesWithConnection : this.piecesWithoutConnection;
+                for (const compatible of map.get(o)) builder.withCompatibleTile(piece.id, compatible.id, d);
             }
         }
         return builder.build();
@@ -74,6 +71,19 @@ export class PieceSet {
 
     generateParts(transform: CubeToOrthoTransform): Map<number, Part> {
         return new Map(Array.from(this).map(piece => ([piece.id, piece.generatePart(transform)])));
+    }
+
+    createBorderConstraint(): Constraint {
+        return (space) => space.map(position => {
+            const toDisallow = <Piece[]>[];
+            for (let d = 0; d < numDirections; d++) {
+                const neighborPosition = position.add(direction(d));
+                if (!space.has(neighborPosition)) {
+                    toDisallow.push(...this.piecesWithConnection.get(d));
+                }
+            }
+            return [position, toDisallow.map(piece => piece.id)];
+        });
     }
 
     [Symbol.iterator]() {
