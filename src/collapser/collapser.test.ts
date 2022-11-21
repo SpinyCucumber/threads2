@@ -1,5 +1,5 @@
 import { test, expect } from "@jest/globals";
-import { AdjacencyRulesBuilder } from "./collapser";
+import { AdjacencyRulesBuilder } from "./adjacency";
 import { Tile, TileSet } from "./tile";
 
 test("should calculate weightLogWeight", () => {
