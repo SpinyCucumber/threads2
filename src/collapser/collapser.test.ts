@@ -1,5 +1,6 @@
 import { test, expect } from "@jest/globals";
 import { AdjacencyRulesBuilder } from "./adjacency";
+import { EnablerCounter } from "./collapser";
 import { Tile, TileSet } from "./tile";
 
 test("should calculate weightLogWeight", () => {
@@ -54,4 +55,17 @@ test("should compute enabler counts", () => {
     expect(rules.enablerCounts.get(0)).toEqual(new Map([[0, 1], [3, 1]]));
     expect(rules.enablerCounts.get(1)).toEqual(new Map([[3, 2], [0, 1]]));
     expect(rules.enablerCounts.get(2)).toEqual(new Map([[0, 2], [3, 1]]));
+});
+
+test("should enabler counter become disabled", () => {
+    const counter = new EnablerCounter([
+        [0, 2],
+        [1, 2],
+    ]);
+    expect(counter.isDisabled()).toBeFalsy();
+    counter.decrease(0);
+    counter.decrease(1);
+    expect(counter.isDisabled()).toBeFalsy();
+    expect(counter.decrease(0)).toBeTruthy();
+    expect(counter.isDisabled()).toBeTruthy();
 });
