@@ -10,7 +10,7 @@ export class Curve extends Immutable.Record({ a: new Position(), b: new Position
         const h = midpoint(e, g);
         const i = midpoint(f, g);
         const j = midpoint(h, i);
-        return [new Curve({ a: this.a, b: e, c: h, d: j }), new Curve({ a: j, b: i, c: f, d: this.b })];
+        return [new Curve({ a: this.a, b: e, c: h, d: j }), new Curve({ a: j, b: i, c: f, d: this.d })];
     }
 
     sample(numDivisions: number): Immutable.Seq.Indexed<[Position, Position]> {
