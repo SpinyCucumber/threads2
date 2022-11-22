@@ -28,7 +28,7 @@ export class Piece {
         const center = transform.transformPosition(new CubePosition({ q: 0, r: 0, s: 0 }));
         for (let d = 0; d < directions.size; d++) {
             if (this.hasConnection(d)) {
-                vertices.push(center.add(transform.transformVector(directions[d]).scale(0.5)), center);
+                vertices.push(center.add(transform.transformVector(directions.get(d)).scale(0.5)), center);
             }
         }
         return new Part(vertices, PrimitiveType.Lines);
@@ -87,7 +87,7 @@ export class PieceSet {
         return (space) => space.map(position => {
             const toDisallow = <Piece[]>[];
             for (let d = 0; d < directions.size; d++) {
-                const neighborPosition = position.add(directions[d]);
+                const neighborPosition = position.add(directions.get(d));
                 if (!space.has(neighborPosition)) {
                     toDisallow.push(...this.piecesWithConnection.get(d));
                 }

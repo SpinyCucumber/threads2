@@ -231,7 +231,7 @@ export class Collapser {
             for (const [d, compatible] of this.rules.getCompatibleTiles(tile.id)) {
                 // Find neighbor position
                 // Skip if neighbor does not exist at position or neighbor is collapsed
-                const neighborPosition = position.add(directions[d]);
+                const neighborPosition = position.add(directions.get(d));
                 const neighbor = this.cells.get(neighborPosition);
                 if (neighbor === undefined || neighbor.isCollapsed) continue;
                 // For each compatible tile, decrement enabler

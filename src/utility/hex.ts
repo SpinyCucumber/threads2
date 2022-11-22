@@ -86,12 +86,14 @@ export function *enumerateDirections(): Generator<CubeVector> {
     }
 }
 
+export const directions = Immutable.List(enumerateDirections());
+
 export function *enumerateRing(center: CubePosition, radius: number): Generator<CubePosition> {
-    let p = center.add(directions[4].scale(radius));
+    let p = center.add(directions.get(4).scale(radius));
     for (let i = 0; i < 6; i++) {
         for (let j = 0; j < radius; j++) {
             yield p;
-            p = p.add(directions[i]);
+            p = p.add(directions.get(i));
         }
     }
 }
@@ -106,5 +108,3 @@ export function *enumerateSpiral(center: CubePosition, radius: number): Generato
 export function opposite(d: number) {
     return (d + 3) % 6;
 }
-
-export const directions = Immutable.List(enumerateDirections());
