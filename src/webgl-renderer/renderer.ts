@@ -49,19 +49,19 @@ export interface BakedPart {
     mode: number;
 }
 
-interface WebGLRendererOptions {
+interface RendererOptions {
     canvas: HTMLCanvasElement;
     parts: Iterable<[number, Part]>,
 }
 
-export class WebGLRenderer {
+export class Renderer {
 
     private gl: WebGL2RenderingContext;
     private bakedParts: Map<number, BakedPart>;
     private positionLocation: number;
     private translateLocation: WebGLUniformLocation;
 
-    constructor({ canvas, parts }: WebGLRendererOptions) {
+    constructor({ canvas, parts }: RendererOptions) {
         this.gl = canvas.getContext("webgl2");
         this.gl.viewport(0, 0, canvas.width, canvas.height);
         this.gl.clearColor(0, 0, 0, 1);

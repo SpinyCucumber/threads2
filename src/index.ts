@@ -1,7 +1,7 @@
 import { Piece, PieceSet } from "./piece";
 import { CubePosition, CubeToOrthoTransform, enumerateSpiral, Position, Vector } from "./utility";
 import { Collapser } from "./collapser";
-import { WebGLRenderer } from "./webgl-renderer";
+import { Renderer } from "./webgl-renderer";
 import "./style.scss";
 
 const pieces = new PieceSet([
@@ -51,7 +51,7 @@ window.onload = () => {
     const { tiles } = collapser.run();
     // Place parts and render
     const canvas: HTMLCanvasElement = document.querySelector("#canvas");
-    const renderer = new WebGLRenderer({ canvas, parts, });
+    const renderer = new Renderer({ canvas, parts, });
     renderer.startDraw();
     for (const [position, tile] of tiles) {
         renderer.drawPart(tile.id, transform.transformPosition(position));

@@ -1,1 +1,1 @@
-export * from "./webgl-renderer";
+export * from "./renderer";
