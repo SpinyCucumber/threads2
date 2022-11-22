@@ -1,8 +1,9 @@
 import { Piece, PieceSet } from "./piece";
-import { CubePosition, CubeToOrthoTransform, enumerateSpiral, Position, Vector } from "./utility";
+import { CubePosition, CubeToOrthoTransform, enumerateSpiral, Position, sleep, Vector } from "./utility";
 import { Collapser } from "./collapser";
-import { Renderer } from "./webgl-renderer";
 import "./style.scss";
+import { Renderer } from "./canvas-renderer";
+import { Curve } from "./utility/curve";
 
 const pieces = new PieceSet([
     new Piece(0, 0b110000, 2),
@@ -32,11 +33,11 @@ const pieces = new PieceSet([
 const space = enumerateSpiral(new CubePosition({ q: 0, r: 0, s: 0 }), 6);
 
 const transform = new CubeToOrthoTransform(
-    new Vector({ x: 0.06 * Math.sqrt(3), y: 0 }),
-    new Vector({ x: 0.06 * Math.sqrt(3)/2, y: -0.06 * 3/2 }),
-    new Position({ x: 0, y: 0 }),
+    new Vector({ x: 20 * Math.sqrt(3), y: 0 }),
+    new Vector({ x: 20 * Math.sqrt(3)/2, y: 20 * 3/2 }),
+    new Position({ x: 200, y: 200 }),
 );
-const parts = pieces.generateParts(transform);
+const curves = pieces.generateCurves(transform);
 
 const collapser = new Collapser({
     space,
@@ -46,14 +47,21 @@ const collapser = new Collapser({
     noiseFunction: () => 0 * Math.random()
 });
 
-window.onload = () => {
+window.onload = async () => {
     // Run collapser
-    const { tiles } = collapser.run();
-    // Place parts and render
+    const { tiles, history } = collapser.run();
+    // Render tiles!
     const canvas: HTMLCanvasElement = document.querySelector("#canvas");
-    const renderer = new Renderer({ canvas, parts, });
-    renderer.startDraw();
-    for (const [position, tile] of tiles) {
-        renderer.drawPart(tile.id, transform.transformPosition(position));
+    const renderer = new Renderer({ canvas });
+
+    for (const cubePosition of history) {
+        const tile = tiles.get(cubePosition);
+        const position = transform.transformPosition(cubePosition);
+        console.log(`${position}`);
+        // Draw piece's curves at position
+        for (const curve of curves.get(tile.id)) {
+            await renderer.strokeCurve(position, curve, 15);
+        }
     }
+
 }
