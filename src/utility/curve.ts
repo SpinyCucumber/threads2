@@ -1,7 +1,7 @@
 import { Position, midpoint } from "./ortho";
 import * as Immutable from "immutable"
 
-class Curve extends Immutable.Record({ a: new Position(), b: new Position(), c: new Position(), d: new Position() }) {
+export class Curve extends Immutable.Record({ a: new Position(), b: new Position(), c: new Position(), d: new Position() }) {
 
     divide(): [Curve, Curve] {
         const e = midpoint(this.a, this.b);
