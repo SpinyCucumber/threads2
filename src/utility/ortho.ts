@@ -38,3 +38,7 @@ export function flatten(vertices: (Position | Vector)[]): Float32Array {
     }
     return array;
 }
+
+export function midpoint(a: Position, b: Position) {
+    return a.add(b.subtract(a).scale(1/2));
+}
