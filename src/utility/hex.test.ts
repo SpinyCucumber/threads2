@@ -1,6 +1,6 @@
 import { test } from "@jest/globals"
 import { CubeVector, CubePosition, enumerateRing, enumerateSpiral, enumerateDirections, CubeToOrthoTransform } from "./hex";
-import * as Immutable from "immutable";
+import Immutable from "immutable";
 
 test("should enumerate directions", () => {
     const directions = Array.from(enumerateDirections());

@@ -1,12 +1,14 @@
 import { AdjacencyRules, AdjacencyRulesBuilder, Constraint, Tile, TileSet } from "../collapser";
 import { CubePosition, CubeToOrthoTransform, directions, getOrInsert, opposite, Position } from "../utility";
+import { Part, PrimitiveType } from "../webgl-renderer/part";
 import { Curve } from "../utility/curve";
-import { Part, PrimitiveType } from "../webgl-renderer";
+import Immutable from "immutable";
 
 export class Piece {
 
     id: number;
     connections: number;
+    connectionList: Immutable.List<number>;
     weight: number;
 
     constructor(id: number, connections: number, weight: number) {

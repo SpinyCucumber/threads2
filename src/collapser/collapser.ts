@@ -2,7 +2,7 @@ import { Counter, CubePosition, directions, opposite } from "../utility";
 import { Tile, TileSet } from "./tile";
 import { AdjacencyRules } from "./adjacency";
 import PriorityQueue from "js-priority-queue";
-import * as Immutable from "immutable";
+import Immutable from "immutable";
 
 export class CollapserError extends Error { }
 

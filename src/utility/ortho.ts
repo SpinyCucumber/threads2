@@ -1,4 +1,4 @@
-import * as Immutable from "immutable";
+import Immutable from "immutable";
 
 export class Position extends Immutable.Record({ x: 0, y: 0 }) {
 

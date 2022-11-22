@@ -1,4 +1,4 @@
-import * as Immutable from "immutable";
+import Immutable from "immutable";
 import { Position, Vector } from "./ortho";
 
 export class CubePosition extends Immutable.Record({ q: 0, r: 0, s: 0, }) {

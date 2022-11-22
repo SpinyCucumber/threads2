@@ -1,5 +1,5 @@
 import { Position, midpoint } from "./ortho";
-import * as Immutable from "immutable"
+import Immutable from "immutable"
 
 export class Curve extends Immutable.Record({ a: new Position(), b: new Position(), c: new Position(), d: new Position() }) {
 
