@@ -1,6 +1,6 @@
 import { AdjacencyRules, AdjacencyRulesBuilder, Constraint, Tile, TileSet } from "../collapser";
 import { CubePosition, CubeToOrthoTransform, direction, getOrInsert, numDirections, opposite, Position } from "../utility";
-import { Part, PrimitiveType } from "../renderer";
+import { Part, PrimitiveType } from "../webgl-renderer";
 
 export class Piece {
 
