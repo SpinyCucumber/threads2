@@ -14,6 +14,7 @@ export class Piece {
     constructor(id: number, connections: number, weight: number) {
         this.id = id;
         this.connections = connections;
+        this.connectionList = Immutable.List(directions.keySeq().filter(d => this.hasConnection(d)));
         this.weight = weight;
     }
 
@@ -36,9 +37,19 @@ export class Piece {
         return new Part(vertices, PrimitiveType.Lines);
     }
 
-    generateCurves(transform: CubeToOrthoTransform): Curve[] {
-        // TODO
-        return [];
+    generateCurves(transform: CubeToOrthoTransform): Immutable.List<Curve> {
+        // For pieces with two connections, we create a single curve with the control point in the center.
+        const center = transform.transformPosition(new CubePosition({ q: 0, r: 0, s: 0 }));
+        function getVertex(d: number): Position {
+            return center.add(transform.transformVector(directions.get(d).scale(0.5)));
+        }
+        if (this.connectionList.size === 2) {
+            const [ q, r ] = this.connectionList;
+            return Immutable.List.of(new Curve({ a: getVertex(q), b: center, c: center, d: getVertex(r) }));
+        }
+        // For all other configurations (0 connections, 1 connection, more than two)
+        // we create one curve for each connection which creates a straight line to the center.
+        return this.connectionList.map(d => new Curve({ a: getVertex(d), b: center, c: center, d: center }));
     }
 
 }
@@ -81,7 +92,7 @@ export class PieceSet {
         return new Map(Array.from(this).map(piece => ([piece.id, piece.generatePart(transform)])));
     }
 
-    generateCurves(transform: CubeToOrthoTransform): Map<number, Curve[]> {
+    generateCurves(transform: CubeToOrthoTransform): Map<number, Immutable.List<Curve>> {
         return new Map(Array.from(this).map(piece => ([piece.id, piece.generateCurves(transform)])));
     }
 
