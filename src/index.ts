@@ -1,8 +1,9 @@
 import { Piece, PieceSet } from "./piece";
 import { CubePosition, CubeToOrthoTransform, enumerateSpiral, Position, Vector } from "./utility";
 import { Collapser } from "./collapser";
+import { Part, PrimitiveType, Renderer } from "./webgl-renderer";
+import Immutable from "immutable";
 import "./style.scss";
-import { Renderer } from "./webgl-renderer";
 
 const pieces = new PieceSet([
     new Piece(0, 0b110000, 2),
@@ -36,7 +37,16 @@ const transform = new CubeToOrthoTransform(
     new Vector({ x: 0.05 * Math.sqrt(3)/2, y: 0.05 * 3/2 }),
     new Position({ x: 0, y: 0 }),
 );
-const parts = pieces.generateParts(transform);
+const curves = pieces.generateCurves(transform);
+// Generate parts from piece curves
+const parts = new Map(Immutable.Seq(curves.entries()).map(([id, curves]) => {
+    // Aggregate curve sample points into single list
+    const vertices = curves.reduce(
+        (vertices, curve) => vertices.concat(curve.sample(3)),
+        Immutable.Seq.Indexed<[Position, Position]>()
+    ).toArray().flat();
+    return [id, new Part(vertices, PrimitiveType.Lines)];
+}));
 
 const collapser = new Collapser({
     space,
@@ -53,10 +63,10 @@ window.onload = async () => {
     const canvas: HTMLCanvasElement = document.querySelector("#canvas");
     const renderer = new Renderer({ canvas, parts });
 
+    renderer.startDraw();
     for (const cubePosition of history) {
         const tile = tiles.get(cubePosition);
         const position = transform.transformPosition(cubePosition);
-        console.log(`${position}`);
         // Draw piece part at position
         renderer.drawPart(tile.id, position);
     }
