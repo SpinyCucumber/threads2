@@ -2,7 +2,7 @@ import { Piece, PieceSet } from "./piece";
 import { CubePosition, CubeToOrthoTransform, enumerateSpiral, Position, Vector } from "./utility";
 import { Collapser } from "./collapser";
 import "./style.scss";
-import { Renderer } from "./canvas-renderer";
+import { Renderer } from "./webgl-renderer";
 
 const pieces = new PieceSet([
     new Piece(0, 0b110000, 2),
@@ -32,11 +32,11 @@ const pieces = new PieceSet([
 const space = enumerateSpiral(new CubePosition({ q: 0, r: 0, s: 0 }), 6);
 
 const transform = new CubeToOrthoTransform(
-    new Vector({ x: 20 * Math.sqrt(3), y: 0 }),
-    new Vector({ x: 20 * Math.sqrt(3)/2, y: 20 * 3/2 }),
-    new Position({ x: 200, y: 200 }),
+    new Vector({ x: 0.05 * Math.sqrt(3), y: 0 }),
+    new Vector({ x: 0.05 * Math.sqrt(3)/2, y: 0.05 * 3/2 }),
+    new Position({ x: 0, y: 0 }),
 );
-const curves = pieces.generateCurves(transform);
+const parts = pieces.generateParts(transform);
 
 const collapser = new Collapser({
     space,
@@ -51,16 +51,14 @@ window.onload = async () => {
     const { tiles, history } = collapser.run();
     // Render tiles!
     const canvas: HTMLCanvasElement = document.querySelector("#canvas");
-    const renderer = new Renderer({ canvas });
+    const renderer = new Renderer({ canvas, parts });
 
     for (const cubePosition of history) {
         const tile = tiles.get(cubePosition);
         const position = transform.transformPosition(cubePosition);
         console.log(`${position}`);
-        // Draw piece's curves at position
-        for (const curve of curves.get(tile.id)) {
-            await renderer.strokeCurve(position, curve, 15);
-        }
+        // Draw piece part at position
+        renderer.drawPart(tile.id, position);
     }
 
 }
