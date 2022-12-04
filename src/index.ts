@@ -1,9 +1,8 @@
 import { Piece, PieceSet } from "./piece";
-import { CubePosition, CubeToOrthoTransform, enumerateSpiral, Position, sleep, Vector } from "./utility";
+import { CubePosition, CubeToOrthoTransform, enumerateSpiral, Position, Vector } from "./utility";
 import { Collapser } from "./collapser";
 import "./style.scss";
 import { Renderer } from "./canvas-renderer";
-import { Curve } from "./utility/curve";
 
 const pieces = new PieceSet([
     new Piece(0, 0b110000, 2),
