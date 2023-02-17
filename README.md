@@ -8,4 +8,5 @@ You can access a live deployment at https://spinycucumber.github.io/threads2.
 
 ### Development ###
 To set up the dev environment, run ```npm install```
+
 The project can be ran locally by using ```npm run serve```
