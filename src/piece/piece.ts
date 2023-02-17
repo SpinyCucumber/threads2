@@ -2,19 +2,19 @@ import { AdjacencyRules, AdjacencyRulesBuilder, Constraint, Tile, TileSet } from
 import { CubePosition, CubeToOrthoTransform, directions, getOrInsert, opposite, Position } from "../utility";
 import { Part, PrimitiveType } from "../webgl-renderer/part";
 import { Curve } from "../utility/curve";
-import Immutable from "immutable";
+import { List } from "immutable";
 
 export class Piece {
 
     id: number;
     connections: number;
-    connectionList: Immutable.List<number>;
+    connectionList: List<number>;
     weight: number;
 
     constructor(id: number, connections: number, weight: number) {
         this.id = id;
         this.connections = connections;
-        this.connectionList = Immutable.List(directions.keySeq().filter(d => this.hasConnection(d)));
+        this.connectionList = List(directions.keySeq().filter(d => this.hasConnection(d)));
         this.weight = weight;
     }
 
@@ -45,7 +45,7 @@ export class Piece {
         }
         if (this.connectionList.size === 2) {
             const [ q, r ] = this.connectionList;
-            return Immutable.List.of(new Curve({ a: getVertex(q), b: center, c: center, d: getVertex(r) }));
+            return List.of(new Curve({ a: getVertex(q), b: center, c: center, d: getVertex(r) }));
         }
         // For all other configurations (0 connections, 1 connection, more than two)
         // we create one curve for each connection which creates a straight line to the center.
@@ -106,6 +106,13 @@ export class PieceSet {
                 }
             }
             return [position, toDisallow.map(piece => piece.id)];
+        });
+    }
+
+    createFilterConstraint(disallowedIds: Iterable<number>, filter: (position: CubePosition) => boolean): Constraint {
+        return (space) => space.map(position => {
+            const toDisallow = filter(position) ? disallowedIds : [];
+            return [position, toDisallow];
         });
     }
 
