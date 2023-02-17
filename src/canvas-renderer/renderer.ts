@@ -18,19 +18,17 @@ export class Renderer {
     }
 
     // TODO Cache segments?
-    async strokeCurve(position: Position, curve: Curve, duration: number) {
+    strokeCurve(position: Position, curve: Curve) {
         // Transform context
         this.context.save();
         this.context.translate(position.x, position.y);
         // Sample curve and draw segments
         const segments = curve.sample(this.numDivisions);
-        const period = duration / Math.pow(2, this.numDivisions);
         for (const [a, b] of segments) {
             this.context.beginPath();
             this.context.moveTo(a.x, a.y);
             this.context.lineTo(b.x, b.y);
             this.context.stroke();
-            await sleep(period);
         }
         // Restore context
         this.context.restore();
