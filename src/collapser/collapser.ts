@@ -10,7 +10,7 @@ export class CollapserError extends Error { }
  * A Constraint is a function that constrains the tiles that may appear in a cell
  * based on the position of the cell. Constraints are ran before the main collapser loop.
  */
-export type Constraint = (space: Immutable.Set<CubePosition>) => Iterable<[CubePosition, number[]]>;
+export type Constraint = (space: Immutable.Set<CubePosition>) => Iterable<[CubePosition, Iterable<number>]>;
 
 interface CellOptions {
     entropyNoise: number;
