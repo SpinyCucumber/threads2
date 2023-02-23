@@ -6,6 +6,9 @@ import Immutable from "immutable";
 
 export class CollapserError extends Error { }
 
+export class NoPossibleTilesError extends CollapserError { }
+export class MaxAttemptsExceededError extends CollapserError { }
+
 /**
  * A Constraint is a function that constrains the tiles that may appear in a cell
  * based on the position of the cell. Constraints are ran before the main collapser loop.
@@ -217,7 +220,7 @@ export class Collapser {
         const cell = this.cells.get(position);
         // If cell has no possible tiles (all tiles have been disallowed) produce error
         // Collapse cell and push tile removals
-        if (cell.getAllowedTiles().size === 0) throw new CollapserError(`Cell at ${position} has no possible tiles!`);
+        if (cell.getAllowedTiles().size === 0) throw new NoPossibleTilesError(`Cell at ${position} has no possible tiles!`);
         const tile = this.selectTile(cell.getAllowedTiles(), cell.getWeightSum());
         for (const removed of cell.collapse(tile)) {
             this.disallowStack.push([position, removed]);
@@ -262,4 +265,16 @@ export class Collapser {
         }
     }
 
+}
+
+export function runAttempts(options: CollapserOptions, maxAttempts: number): CollapserResult {
+    for (let numAttempt = 0; numAttempt < maxAttempts; numAttempt++) {
+        try {
+            return new Collapser(options).run();
+        }
+        catch (error) {
+            if (!(error instanceof NoPossibleTilesError)) throw(error);
+        }
+    }
+    throw new MaxAttemptsExceededError(`Giving up after ${maxAttempts} attempts.`);
 }
